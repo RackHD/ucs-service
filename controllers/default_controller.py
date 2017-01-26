@@ -1,6 +1,7 @@
 # Copyright 2017, Dell EMC, Inc.
 
 from ucsmsdk.ucshandle import UcsHandle
+import pickle
 
 def login_get(host = None, user = None, password = None):
     handle = UcsHandle(host, user, password,secure=False);
@@ -43,6 +44,18 @@ def getRackmount(host = None, user = None, password = None):
             data.append(server)
             handle.logout()
         return data
+
+def getCatalog(host = None,  user = None, password = None, identifier=None):
+
+    handle = UcsHandle(host, user, password, secure=False)
+    if handle.login():
+        element = handle.query_dn(dn=identifier)
+        catalog = element.__dict__
+        for property in catalog.keys():
+            if(property[0]=="_"):
+                del catalog[property]
+        handle.logout()
+        return catalog
 
 
 
