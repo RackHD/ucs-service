@@ -1,15 +1,15 @@
 # Copyright 2017, Dell EMC, Inc.
 
 from ucsmsdk.ucshandle import UcsHandle
-import pickle
 
-def login_get(host = None, user = None, password = None):
-    handle = UcsHandle(host, user, password,secure=False);
+
+def login_get(host=None, user=None, password=None):
+    handle = UcsHandle(host, user, password, secure=False)
     if handle.login():
-        return handle.cookie;
+        return handle.cookie
 
 
-def systemGetAll(host = None, user = None, password = None):
+def systemGetAll(host=None, user=None, password=None):
     handle = UcsHandle(host, user, password, secure=False)
     if handle.login():
         elements = [{"ciscoXmlName": "EquipmentChassis", "humanReadableName": "Chassis"},
@@ -21,22 +21,23 @@ def systemGetAll(host = None, user = None, password = None):
             units = []
             components = handle.query_children(in_dn="sys", class_id=x["ciscoXmlName"])
             for y in components:
-                subElement = {"relative_path": "/"+(vars(y))["dn"]}
+                subElement = {"relative_path": "/" + (vars(y))["dn"]}
                 units.append(subElement)
-            finalObjs[x["humanReadableName"]]=units
+            finalObjs[x["humanReadableName"]] = units
             handle.logout()
         return finalObjs
 
-def getRackmount(host = None, user = None, password = None):
+
+def getRackmount(host=None, user=None, password=None):
     data = []
     handle = UcsHandle(host, user, password, secure=False)
     if handle.login():
         computeRackUnit = handle.query_children(in_dn="sys", class_id="computeRackUnit")
         for x in computeRackUnit:
-            server={}
-            server["name"]=x.rn
-            server["path"]=x.dn
-            server["macs"]=[]
+            server = {}
+            server["name"] = x.rn
+            server["path"] = x.dn
+            server["macs"] = []
             macs = handle.query_children(in_dn=x.dn, class_id='PciEquipSlot')
             for y in macs:
                 server["macs"].append(y.mac_left)
@@ -45,12 +46,13 @@ def getRackmount(host = None, user = None, password = None):
             handle.logout()
         return data
 
-def getCatalog(host = None,  user = None, password = None, identifier=None):
+
+def getCatalog(host=None, user=None, password=None, identifier=None):
     data = []
 
     handle = UcsHandle(host, user, password, secure=False)
     if handle.login():
-        elements =handle.query_children(in_dn=identifier)
+        elements = handle.query_children(in_dn=identifier)
         for element in elements:
             data.append(reduce(element.__dict__))
         handle.logout()
@@ -58,7 +60,7 @@ def getCatalog(host = None,  user = None, password = None, identifier=None):
 
 
 def reduce(object):
-    #remove the private propeties of an obj
+    # remove the private propeties of an obj
     for property in object.keys():
         if (property[0] == "_"):
             del object[property]
