@@ -49,18 +49,18 @@ class test_default_controller(unittest.TestCase):
         #setup UCS mocks
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.logout.return_value = True
-        mock_ucs.return_value.query_dn.side_effect = [self.mockCatalogClass(data = MOCK_DATA)]
+        mock_ucs.return_value.query_children.side_effect = [[self.mockCatalogClass(data = MOCK_DATA)]]
         #call getCaltalog
         result = controler.getCatalog(HOST, USER, PASS, identifier=MOCK_ID)
         #verify UCS Mocks were called
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
         mock_ucs.return_value.login.assert_called_once()
-        calls = [mock.call(dn=MOCK_ID)]
-        mock_ucs.return_value.query_dn.assert_has_calls(calls)
+        calls = [mock.call(in_dn=MOCK_ID)]
+        mock_ucs.return_value.query_children.assert_has_calls(calls)
         mock_ucs.return_value.logout.assert_called_once()
         #verify return data
-        self.assertIn('data', result, 'result does not contain member "data"')
-        self.assertEqual(MOCK_DATA, result['data'], 'result["data"] does not equal "{}"'.format(MOCK_DATA))
+        self.assertIn({'data':'data'}, result, 'result does not contain member "data"')
+        self.assertEqual(MOCK_DATA, result[0]['data'], 'result["data"] does not equal "{}"'.format(MOCK_DATA))
         self.assertNotIn('_privData', result, 'result contains private member "_privData"')
 
     @mock.patch('controllers.default_controller.UcsHandle')

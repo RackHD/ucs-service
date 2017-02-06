@@ -46,17 +46,20 @@ def getRackmount(host = None, user = None, password = None):
         return data
 
 def getCatalog(host = None,  user = None, password = None, identifier=None):
+    data = []
 
     handle = UcsHandle(host, user, password, secure=False)
     if handle.login():
-        element = handle.query_dn(dn=identifier)
-        catalog = element.__dict__
-        for property in catalog.keys():
-            if(property[0]=="_"):
-                del catalog[property]
+        elements =handle.query_children(in_dn=identifier)
+        for element in elements:
+            data.append(reduce(element.__dict__))
         handle.logout()
-        return catalog
+        return data
 
 
-
-
+def reduce(object):
+    #remove the private propeties of an obj
+    for property in object.keys():
+        if (property[0] == "_"):
+            del object[property]
+    return object
