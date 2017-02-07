@@ -120,5 +120,32 @@ paths:
           description: "Successful data fetch of rackmount catalogs"
       x-tags:
       - tag: "default"
+  /chassis:
+    get:
+      tags:
+      - "default"
+      description: "Returns a catalog of rackmount servers"
+      operationId: "controllers.default_controller.getChassis"
+      parameters:
+      - name: "host"
+        in: "query"
+        description: "USC manager host name or IP"
+        required: false
+        type: "string"
+      - name: "user"
+        in: "query"
+        description: "UCS manager user name"
+        required: false
+        type: "string"
+      - name: "password"
+        in: "query"
+        description: "UCS manager user password"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Successful data fetch of rackmount catalogs"
+      x-tags:
+      - tag: "default"
 
 definitions: {}
