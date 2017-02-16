@@ -59,6 +59,34 @@ def getCatalog(host=None, user=None, password=None, identifier=None):
         return data
 
 
+def getChassis(host=None, user=None, password=None):
+    data = []
+
+    handle = UcsHandle(host, user, password, secure=False)
+    if handle.login():
+        elememts = handle.query_children(in_dn="sys", class_id="EquipmentChassis")
+        for element in elememts:
+            chassis = {}
+            identifier = element.dn
+            obj = handle.query_dn(dn=identifier)
+            chassis["name"] = obj.rn
+            chassis["path"] = obj.dn
+            chassis["members"] = []
+            blades = handle.query_children(in_dn=identifier, class_id='ComputeBlade')
+            for x in blades:
+                server = {}
+                server["name"] = x.rn
+                server["path"] = x.dn
+                server["macs"] = []
+                adptares = handle.query_children(in_dn=x.dn, class_id='AdaptorUnit')
+                for x in adptares:
+                    server["macs"].append(x.base_mac)
+                chassis["members"].append(server)
+            data.append(chassis)
+        handle.logout()
+    return data
+
+
 def reduce(object):
     # remove the private propeties of an obj
     for property in object.keys():
