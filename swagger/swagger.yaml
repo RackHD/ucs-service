@@ -3,56 +3,69 @@ swagger: "2.0"
 info:
   version: "0.0.1"
   title: "<Cisco UCS Manager Service>"
+
+definitions:
+  AuthInfo:
+    description: "Authenticaion info for a request"
+    properties:
+      host:
+        type: string
+      user:
+        type: string
+      password:
+        type: string
+    required:
+    - host
 paths:
   /login:
     get:
       tags:
       - "default"
       description: "Gets a session cookie by logging into \nthe UCS Manager\n"
-      operationId: "controllers.default_controller.login_get"
+      operationId: "controllers.ucs_controller.login_get"
       parameters:
-      - name: "host"
-        in: "query"
+      - name: "ucs-host"
+        in: "header"
         description: "USC manager host name or IP"
-        required: false
+        required: true
         type: "string"
-      - name: "user"
-        in: "query"
+      - name: "ucs-user"
+        in: "header"
         description: "UCS manager user name"
-        required: false
+        required: true
         type: "string"
-      - name: "password"
-        in: "query"
+      - name: "ucs-password"
+        in: "header"
         description: "UCS manager user password"
-        required: false
+        required: true
         type: "string"
+
       responses:
         200:
           description: "Successful login"
       x-tags:
       - tag: "default"
-
   /sys:
     get:
       tags:
       - "default"
       description: "Discover USC managed objects"
-      operationId: "controllers.default_controller.systemGetAll"
+      operationId: "controllers.ucs_controller.systemGetAll"
       parameters:
-      - name: "host"
-        in: "query"
+      - name: "ucs-host"
+        in: "header"
         description: "USC manager host name or IP"
-        required: false
+        required: true
         type: "string"
-      - name: "user"
-        in: "query"
+      - name: "ucs-user"
+        in: "header"
         description: "UCS manager user name"
-        required: false
+        required: true
         type: "string"
-      - name: "password"
-        in: "query"
+      - name: "ucs-password"
+        in: "header"
         description: "UCS manager user password"
-        required: false
+        required: true
         type: "string"
       responses:
         200:
@@ -65,22 +78,22 @@ paths:
       tags:
       - "default"
       description: "Discover USC managed rackmount servers"
-      operationId: "controllers.default_controller.getRackmount"
+      operationId: "controllers.ucs_controller.getRackmount"
       parameters:
-      - name: "host"
-        in: "query"
+      - name: "ucs-host"
+        in: "header"
         description: "USC manager host name or IP"
-        required: false
+        required: true
         type: "string"
-      - name: "user"
-        in: "query"
+      - name: "ucs-user"
+        in: "header"
         description: "UCS manager user name"
-        required: false
+        required: true
         type: "string"
-      - name: "password"
-        in: "query"
+      - name: "ucs-password"
+        in: "header"
         description: "UCS manager user password"
-        required: false
+        required: true
         type: "string"
       responses:
         200:
@@ -93,22 +106,22 @@ paths:
       tags:
       - "default"
       description: "Returns a catalog of rackmount servers"
-      operationId: "controllers.default_controller.getCatalog"
+      operationId: "controllers.ucs_controller.getCatalog"
       parameters:
-      - name: "host"
-        in: "query"
+      - name: "ucs-host"
+        in: "header"
         description: "USC manager host name or IP"
-        required: false
+        required: true
         type: "string"
-      - name: "user"
-        in: "query"
+      - name: "ucs-user"
+        in: "header"
         description: "UCS manager user name"
-        required: false
+        required: true
         type: "string"
-      - name: "password"
-        in: "query"
+      - name: "ucs-password"
+        in: "header"
         description: "UCS manager user password"
-        required: false
+        required: true
         type: "string"
       - name: "identifier"
         in: "query"
@@ -125,22 +138,22 @@ paths:
       tags:
       - "default"
       description: "Returns a catalog of rackmount servers"
-      operationId: "controllers.default_controller.getChassis"
+      operationId: "controllers.ucs_controller.getChassis"
       parameters:
-      - name: "host"
-        in: "query"
+      - name: "ucs-host"
+        in: "header"
         description: "USC manager host name or IP"
-        required: false
+        required: true
         type: "string"
-      - name: "user"
-        in: "query"
+      - name: "ucs-user"
+        in: "header"
         description: "UCS manager user name"
-        required: false
+        required: true
         type: "string"
-      - name: "password"
-        in: "query"
+      - name: "ucs-password"
+        in: "header"
         description: "UCS manager user password"
-        required: false
+        required: true
         type: "string"
       responses:
         200:
@@ -152,22 +165,22 @@ paths:
       tags:
       - "default"
       description: "Returns an array of Service Profiles"
-      operationId: "controllers.default_controller.getServiceProfile"
+      operationId: "controllers.ucs_controller.getServiceProfile"
       parameters:
-      - name: "host"
-        in: "query"
+      - name: "ucs-host"
+        in: "header"
         description: "USC manager host name or IP"
-        required: false
+        required: true
         type: "string"
-      - name: "user"
-        in: "query"
+      - name: "ucs-user"
+        in: "header"
         description: "UCS manager user name"
-        required: false
+        required: true
         type: "string"
-      - name: "password"
-        in: "query"
+      - name: "ucs-password"
+        in: "header"
         description: "UCS manager user password"
-        required: false
+        required: true
         type: "string"
       responses:
         200:
@@ -179,22 +192,22 @@ paths:
       tags:
       - "default"
       description: "Provide power mgmt capabilities for ucs service profiles"
-      operationId: "controllers.default_controller.powerMgmt"
+      operationId: "controllers.ucs_controller.powerMgmt"
       parameters:
-      - name: "host"
-        in: "query"
+      - name: "ucs-host"
+        in: "header"
         description: "USC manager host name or IP"
-        required: false
+        required: true
         type: "string"
-      - name: "user"
-        in: "query"
+      - name: "ucs-user"
+        in: "header"
         description: "UCS manager user name"
-        required: false
+        required: true
         type: "string"
-      - name: "password"
-        in: "query"
+      - name: "ucs-password"
+        in: "header"
         description: "UCS manager user password"
-        required: false
+        required: true
         type: "string"
       - name: "identifier"
         in: "query"
@@ -211,5 +224,3 @@ paths:
           description: "Succesfully posted the power action"
       x-tags:
       - tag: "default"
-
-definitions: {}

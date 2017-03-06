@@ -2,12 +2,14 @@
 
 from ucsmsdk.ucshandle import UcsHandle
 from ucsmsdk.ucsexception import UcsException
+from flask import request
 from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
 from ucsmsdk.mometa.ls.LsPower import LsPower
 
 
-def login_get(host=None, user=None, password=None):
-    handle = UcsHandle(host, user, password, secure=False)
+def login_get():
+    authInfo = _getUcsAuthInfo((request.headers))
+    handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         return handle.cookie
 
@@ -28,8 +30,9 @@ def http_body_factory(function):
 
 
 @http_body_factory
-def systemGetAll(host=None, user=None, password=None):
-    handle = UcsHandle(host, user, password, secure=False)
+def systemGetAll():
+    authInfo = _getUcsAuthInfo((request.headers))
+    handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         elements = [{"ciscoXmlName": "EquipmentChassis", "humanReadableName": "Chassis"},
                     {"ciscoXmlName": "NetworkElement", "humanReadableName": "Fabric Interconnects"},
@@ -60,9 +63,10 @@ def systemGetAll(host=None, user=None, password=None):
 
 
 @http_body_factory
-def getRackmount(host=None, user=None, password=None):
+def getRackmount():
+    authInfo = _getUcsAuthInfo((request.headers))
     data = []
-    handle = UcsHandle(host, user, password, secure=False)
+    handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         try:
             computeRackUnit = handle.query_children(in_dn="sys", class_id="computeRackUnit")
@@ -97,10 +101,11 @@ def getRackmount(host=None, user=None, password=None):
 
 
 @http_body_factory
-def getCatalog(host=None, user=None, password=None, identifier=None):
+def getCatalog(identifier=None):
+    authInfo = _getUcsAuthInfo((request.headers))
     data = []
 
-    handle = UcsHandle(host, user, password, secure=False)
+    handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         try:
             elements = handle.query_children(in_dn=identifier)
@@ -122,9 +127,10 @@ def getCatalog(host=None, user=None, password=None, identifier=None):
 
 
 @http_body_factory
-def getChassis(host=None, user=None, password=None):
+def getChassis():
+    authInfo = _getUcsAuthInfo((request.headers))
     data = []
-    handle = UcsHandle(host, user, password, secure=False)
+    handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         try:
             elememts = handle.query_children(in_dn="sys", class_id="EquipmentChassis")
@@ -175,8 +181,9 @@ def getChassis(host=None, user=None, password=None):
 
 
 @http_body_factory
-def getServiceProfile(host=None, user=None, password=None):
-    handle = UcsHandle(host, user, password, secure=False)
+def getServiceProfile():
+    authInfo = _getUcsAuthInfo((request.headers))
+    handle = UcsHandle(*authInfo, secure=False)
     if not handle.login():
         handle.logout()
         return 'Forbidden', "", 403
@@ -221,8 +228,9 @@ def getServiceProfile(host=None, user=None, password=None):
 
 
 @http_body_factory
-def powerMgmt(host=None, user=None, password=None, identifier=None, action=None):
-    handle = UcsHandle(host, user, password, secure=False)
+def powerMgmt(identifier=None, action=None):
+    authInfo = _getUcsAuthInfo((request.headers))
+    handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         try:
             data = _service_profile_power_set(handle=handle, dn=identifier, state=action)
@@ -271,6 +279,14 @@ def _service_profile_power_set(handle, dn=None, state=None):
     handle.set_mo(sp_mo)
     handle.commit()
     return data
+
+
+def _getUcsAuthInfo(headers):
+    host = headers.get('ucs-host')
+    user = headers.get('ucs-user')
+    password = headers.get('ucs-password')
+
+    return(host, user, password)
 
 
 def reduce(object):
