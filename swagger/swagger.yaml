@@ -174,4 +174,42 @@ paths:
           description: "Successful data fetch of Service Profiles"
       x-tags:
       - tag: "default"
+  /power:
+    post:
+      tags:
+      - "default"
+      description: "Provide power mgmt capabilities for ucs service profiles"
+      operationId: "controllers.default_controller.powerMgmt"
+      parameters:
+      - name: "host"
+        in: "query"
+        description: "USC manager host name or IP"
+        required: false
+        type: "string"
+      - name: "user"
+        in: "query"
+        description: "UCS manager user name"
+        required: false
+        type: "string"
+      - name: "password"
+        in: "query"
+        description: "UCS manager user password"
+        required: false
+        type: "string"
+      - name: "identifier"
+        in: "query"
+        description: "dn of the ucs element or the dn for the service profile"
+        required: false
+        type: "string"
+      - name: "action"
+        in: "query"
+        description: "power action to be taken. Could be 'on', 'off', 'cycle-wait', 'cycle-immediate' "
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Succesfully posted the power action"
+      x-tags:
+      - tag: "default"
+
 definitions: {}

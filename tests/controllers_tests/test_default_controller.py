@@ -99,6 +99,17 @@ class test_default_controller(unittest.TestCase):
             self.pn_dn = data['pn_dn']
             self.assoc_state = data['assoc_state']
 
+    class mockBlade:
+        def __init__(self, class_id, dn, assigned_to_dn):
+            self._class_id = class_id
+            self.dn = dn
+            self.assigned_to_dn = assigned_to_dn
+
+    class mockServiceProfile:
+        def __init__(self, dn, class_id):
+            self.dn = dn
+            self._class_id = class_id
+
     @mock.patch('controllers.default_controller.UcsHandle')
     def testGetRackmountSuccess(self, mock_ucs):
         left_mac = "00:00:FF:38:64:00"
@@ -126,7 +137,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(di, result[0], 'result does not contain member "data"')
 
     @mock.patch('controllers.default_controller.UcsHandle')
-    def testGetRackmounForbiden(self, mock_ucs):
+    def testGetRackmounForbidden(self, mock_ucs):
         """Invoke a 403 http error"""
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = False
@@ -310,3 +321,95 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.login.assert_called_once()
         # verify return data
         self.assertEqual(result, ({'status': 500, 'message': "Couldn't fetch ServiceProfile", 'stack': ''}, 500))
+
+    @mock.patch('controllers.default_controller.LsPowerConsts')
+    @mock.patch('controllers.default_controller.LsPower')
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testPowerSuccess(self, mock_ucs, mock_LsPower_Consts, mock_LsPower):
+        # setup UCS mocks
+        mock_LsPower_Consts.return_value.STATE_DOWN.return_value = True
+        mock_LsPower.return_value.return_value = True
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_dn.side_effect = \
+            [self.mockBlade("Non_LsServer", "sys/chassis-3/blade-3", "org-root/ls-ps1"),
+             self.mockServiceProfile("org-root/ls-ps1", "LsServer"), ""]
+        # call powerMgmt
+        controler.powerMgmt(HOST, USER, PASS, "sys/chassis-3/blade-3", "off")
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        assert mock_ucs.return_value.query_dn.call_count == 2
+        # assert that the appropriate service profile constant has been set
+        assert mock_LsPower_Consts.STATE_DOWN is not None
+
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testPowerInternalServerError_1(self, mock_ucs):
+        """Invoke a 500 http error by sending an invalid power operation 'off3'"""
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_dn.side_effect = \
+            [self.mockBlade("Non_LsServer", "sys/chassis-3/blade-3", "org-root/ls-ps1"),
+             self.mockServiceProfile("org-root/ls-ps1", "LsServer"), ""]
+        # call powerMgmt
+        result = controler.powerMgmt(HOST, USER, PASS, "sys/chassis-3/blade-3", "off3")
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        assert mock_ucs.return_value.query_dn.call_count == 2
+        di = ({'status': 500, 'message': 'Internal Server Error',
+               'stack': "action %s is not valid. Choose one of the following: 'on', 'off', 'cycle-wait'or 'cycle-immediate'"},
+              500)
+        self.assertEqual(di, result, "Unexpected exception Data")
+
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testPowerInternalServerError_2(self, mock_ucs):
+        """Invoke a 500 http error by sending an invalid dn"""
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_dn.side_effect = \
+            [None,
+             "", ""]
+        # call powerMgmt
+        result = controler.powerMgmt(HOST, USER, PASS, "sys/chassis-3/blade-3", "off")
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        assert mock_ucs.return_value.query_dn.call_count == 1
+        di = ({'status': 500, 'message': 'Internal Server Error', 'stack': 'sever sys/chassis-3/blade-3 does not exist'}, 500)
+        self.assertEqual(di, result, "Unexpected exception Data")
+
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testPowerInternalServerError_3(self, mock_ucs):
+        """Invoke a 500 http error by not associating a server to a service profile"""
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_dn.side_effect = \
+            [self.mockBlade("Non_LsServer", "sys/chassis-3/blade-3", ""),
+             self.mockServiceProfile("org-root/ls-ps1", "LsServer"), ""]
+        # call powerMgmt
+        result = controler.powerMgmt(HOST, USER, PASS, "sys/chassis-3/blade-3", "off")
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        # assert mock_ucs.return_value.query_dn.call_count == 2
+        di = ({'status': 500, 'message': 'Internal Server Error',
+               'stack': 'sever sys/chassis-3/blade-3 is not associated to a service profile'}, 500)
+        self.assertEqual(di, result, "Unexpected exception Data")
+
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testPowerMgmtForbiden(self, mock_ucs):
+        """Invoke a 403 http error"""
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = False
+        # call powerMgmt
+        result = controler.powerMgmt(HOST, USER, PASS, identifier=MOCK_ID)
+        # verify UCS Mocks were not called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.query_dn.assert_not_called()
+        self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
