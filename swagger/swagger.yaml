@@ -147,5 +147,31 @@ paths:
           description: "Successful data fetch of rackmount catalogs"
       x-tags:
       - tag: "default"
-
+  /serviceProfile:
+    get:
+      tags:
+      - "default"
+      description: "Returns an array of Service Profiles"
+      operationId: "controllers.default_controller.getServiceProfile"
+      parameters:
+      - name: "host"
+        in: "query"
+        description: "USC manager host name or IP"
+        required: false
+        type: "string"
+      - name: "user"
+        in: "query"
+        description: "UCS manager user name"
+        required: false
+        type: "string"
+      - name: "password"
+        in: "query"
+        description: "UCS manager user password"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Successful data fetch of Service Profiles"
+      x-tags:
+      - tag: "default"
 definitions: {}

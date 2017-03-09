@@ -15,6 +15,14 @@ MOCK_ID_MACS = "PciEquipSlot"
 MOCK_ID_CHASSIS = "sys/chassis-6"
 MOCK_ID_COMPUTEBLADE = "sys/chassis-6/blade-1"
 MOCK_ID_ADATORUNIT = "sys/chassis-6/blade-1/adaptor-1"
+MOCK_ID_SERVICEPROFILE = "root"
+MOCK_ID_LOGICALSERVER = "org-root/ls-Profile3"
+MOCK_ID_LOGICALSERVER_MEMBER = {
+    'assoc_state': 'associated',
+    'dn': 'org-root/ls-Profile3',
+    'pn_dn': 'sys/rack-unit-3',
+    'rn': 'org-root/ls-Profile3'
+}
 
 
 class test_default_controller(unittest.TestCase):
@@ -76,6 +84,21 @@ class test_default_controller(unittest.TestCase):
             self.rn = id
             self.base_mac = mac
 
+    class mockServiceProfileClass:
+        def __init__(self, data):
+            self.level = data
+
+    class mocklsServer:
+        def __init__(self, data):
+            self.dn = data
+
+    class mocklsServerMembers:
+        def __init__(self, data):
+            self.dn = data['dn']
+            self.rn = data['rn']
+            self.pn_dn = data['pn_dn']
+            self.assoc_state = data['assoc_state']
+
     @mock.patch('controllers.default_controller.UcsHandle')
     def testGetRackmountSuccess(self, mock_ucs):
         left_mac = "00:00:FF:38:64:00"
@@ -113,7 +136,7 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
         mock_ucs.return_value.login.assert_called_once()
         mock_ucs.return_value.query_dn.assert_not_called()
-        self.assertEqual(result, ({'status': 403, 'message': 'Forbiden', 'stack': ''}, 403))
+        self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
     @mock.patch('controllers.default_controller.UcsHandle')
     def testGetRackmounInternalServerError(self, mock_ucs):
@@ -159,7 +182,7 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
         mock_ucs.return_value.login.assert_called_once()
         mock_ucs.return_value.query_dn.assert_not_called()
-        self.assertEqual(result, ({'status': 403, 'message': 'Forbiden', 'stack': ''}, 403))
+        self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
     @mock.patch('controllers.default_controller.UcsHandle')
     def testGetCatalogInternalServerError(self, mock_ucs):
@@ -188,7 +211,7 @@ class test_default_controller(unittest.TestCase):
             [[self.mockChassisClass(data=MOCK_ID_CHASSIS)],
              [self.mockComputeBlade(data=MOCK_ID_COMPUTEBLADE)],
              [self.mockAaptorUnit(MOCK_ID_ADATORUNIT, mac)]]
-        # call getCaltalog
+        # call getChassis
         result = controler.getChassis(HOST, USER, PASS)
         # verify UCS Mocks were called
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
@@ -207,13 +230,13 @@ class test_default_controller(unittest.TestCase):
         """Invoke a 403 http error"""
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = False
-        # call getCaltalog
+        # call getChassis
         result = controler.getChassis(HOST, USER, PASS)
         # verify UCS Mocks were not called
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
         mock_ucs.return_value.login.assert_called_once()
         mock_ucs.return_value.query_dn.assert_not_called()
-        self.assertEqual(result, ({'status': 403, 'message': 'Forbiden', 'stack': ''}, 403))
+        self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
     @mock.patch('controllers.default_controller.UcsHandle')
     def testGetChassisInternalServerError(self, mock_ucs):
@@ -222,10 +245,68 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.logout.return_value = True
         mock_ucs.return_value.query_children.side_effect = ["", "", ""]
-        # call getCaltalog
+        # call getChassis
         result = controler.getChassis(HOST, USER, PASS)
         # verify UCS Mocks were called
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
         mock_ucs.return_value.login.assert_called_once()
         # verify return data
         self.assertEqual(result, ({'status': 500, 'message': "Couldn't fetch EquipmentChassis", 'stack': ''}, 500))
+
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testGetServiceProfileSuccess(self, mock_ucs):
+        serverData = "sys/rack-unit-3"
+        state = "associated"
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_classid.side_effect = \
+            [[self.mockServiceProfileClass(data=MOCK_ID_SERVICEPROFILE)]
+             ]
+        mock_ucs.return_value.query_children.side_effect = \
+            [[self.mocklsServer(data=MOCK_ID_LOGICALSERVER)]
+             ]
+        mock_ucs.return_value.query_dn.side_effect = \
+            [self.mocklsServerMembers(data=MOCK_ID_LOGICALSERVER_MEMBER)]
+        # call getServiceProfile
+        result = controler.getServiceProfile(HOST, USER, PASS)
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        # verify return data
+        di = {
+            'name': MOCK_ID_LOGICALSERVER,
+            'path': MOCK_ID_LOGICALSERVER,
+            'associatedServer': serverData,
+            'assoc_state': state
+        }
+        self.assertEqual(di, result['ServiceProfile']['members'][0], "Unexpected Chassis Data")
+
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testGetServiceProfileForbiden(self, mock_ucs):
+        """Invoke a 403 http error"""
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = False
+        # call getServiceProfile
+        result = controler.getServiceProfile(HOST, USER, PASS)
+        # verify UCS Mocks were not called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.query_dn.assert_not_called()
+        self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
+
+    @mock.patch('controllers.default_controller.UcsHandle')
+    def testGetServiceProfileInternalServerError(self, mock_ucs):
+        """Invoke a 500 http error"""
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_children.side_effect = [""]
+        # call getServiceProfile
+        result = controler.getServiceProfile(HOST, USER, PASS)
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        # verify return data
+        self.assertEqual(result, ({'status': 500, 'message': "Couldn't fetch ServiceProfile", 'stack': ''}, 500))
