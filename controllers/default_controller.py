@@ -171,53 +171,51 @@ def getChassis(host=None, user=None, password=None):
     handle.logout()
     return data
 
+
 @http_body_factory
 def getServiceProfile(host=None, user=None, password=None):
     handle = UcsHandle(host, user, password, secure=False)
-    if handle.login():
-        rootElements = [{"ciscoXmlName": "orgOrg", "humanReadableName": "ServiceProfile"}
-                       ]
-        finalObjs = {}
-        for x in rootElements:
-            subElement = {}
-            try:
-                components = handle.query_classid(x["ciscoXmlName"])
-            except UcsException as e:
-                handle.logout()
-                return 'Internal Server Error', e.error_descr, 500
-            else:
-                if(type(components) == list):
-                    for y in components:
-                        subElement["org"] = y.level
-                        subElement["members"] = []
-                        try:
-                            lsList = handle.query_children(in_dn="org-root", class_id="lsServer")
-                        except UcsException as e:
-                            handle.logout()
-                            return 'Internal Server Error', e.error_descr, 500
-                        else:
-                            if(type(lsList) == list):
-                                for item in lsList:
-                                    logicalServer = {}
-                                    identifier = item.dn
-                                    obj = handle.query_dn(dn=identifier)
-                                    logicalServer["name"] = obj.rn
-                                    logicalServer["path"] = obj.dn
-                                    logicalServer["associatedServer"] = obj.pn_dn
-                                    logicalServer["assoc_state"] = obj.assoc_state
-                                    subElement["members"].append(logicalServer)
-                            else:
-                                handle.logout()
-                                return "Couldn't fetch Logical Servers", "", 500
-                    finalObjs[x["humanReadableName"]] = subElement
-                    handle.logout()
-                else:
-                    handle.logout()
-                    return "Couldn't fetch " + x["humanReadableName"], "", 500
-        return finalObjs
-    else:
+    if not handle.login():
         handle.logout()
         return 'Forbidden', "", 403
+    rootElements = [{"ciscoXmlName": "orgOrg", "humanReadableName": "ServiceProfile"}]
+    finalObjs = {}
+    for x in rootElements:
+        subElement = {}
+        try:
+            components = handle.query_classid(x["ciscoXmlName"])
+        except UcsException as e:
+            handle.logout()
+            return 'Internal Server Error', e.error_descr, 500
+        else:
+            if not (type(components) == list):
+                handle.logout()
+                return "Couldn't fetch " + x["humanReadableName"], "", 500
+
+            for y in components:
+                subElement["org"] = y.level
+                subElement["members"] = []
+                try:
+                    lsList = handle.query_children(in_dn="org-root", class_id="lsServer")
+                except UcsException as e:
+                    handle.logout()
+                    return 'Internal Server Error', e.error_descr, 500
+                else:
+                    if not (type(lsList) == list):
+                        handle.logout()
+                        return "Couldn't fetch Logical Servers", "", 500
+                    for item in lsList:
+                        logicalServer = {}
+                        identifier = item.dn
+                        obj = handle.query_dn(dn=identifier)
+                        logicalServer["name"] = obj.rn
+                        logicalServer["path"] = obj.dn
+                        logicalServer["associatedServer"] = obj.pn_dn
+                        logicalServer["assoc_state"] = obj.assoc_state
+                        subElement["members"].append(logicalServer)
+            finalObjs[x["humanReadableName"]] = subElement
+            handle.logout()
+    return finalObjs
 
 
 def reduce(object):

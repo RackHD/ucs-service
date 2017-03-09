@@ -18,11 +18,12 @@ MOCK_ID_ADATORUNIT = "sys/chassis-6/blade-1/adaptor-1"
 MOCK_ID_SERVICEPROFILE = "root"
 MOCK_ID_LOGICALSERVER = "org-root/ls-Profile3"
 MOCK_ID_LOGICALSERVER_MEMBER = {
-    'assoc_state' : 'associated',
-    'dn' : 'org-root/ls-Profile3',
-    "pn_dn" : "sys/rack-unit-3",
-    "rn" : "org-root/ls-Profile3"
+    'assoc_state': 'associated',
+    'dn': 'org-root/ls-Profile3',
+    'pn_dn': 'sys/rack-unit-3',
+    'rn': 'org-root/ls-Profile3'
 }
+
 
 class test_default_controller(unittest.TestCase):
 
@@ -264,7 +265,7 @@ class test_default_controller(unittest.TestCase):
              ]
         mock_ucs.return_value.query_children.side_effect = \
             [[self.mocklsServer(data=MOCK_ID_LOGICALSERVER)]
-            ]
+             ]
         mock_ucs.return_value.query_dn.side_effect = \
             [self.mocklsServerMembers(data=MOCK_ID_LOGICALSERVER_MEMBER)]
         # call getServiceProfile
