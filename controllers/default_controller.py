@@ -2,6 +2,8 @@
 
 from ucsmsdk.ucshandle import UcsHandle
 from ucsmsdk.ucsexception import UcsException
+from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
+from ucsmsdk.mometa.ls.LsPower import LsPower
 
 
 def login_get(host=None, user=None, password=None):
@@ -40,7 +42,7 @@ def systemGetAll(host=None, user=None, password=None):
                 components = handle.query_children(in_dn="sys", class_id=x["ciscoXmlName"])
             except UcsException as e:
                 handle.logout()
-                return 'Inrternal Server Error', e.error_descr, 500
+                return 'Internal Server Error', e.error_descr, 500
             else:
                 if(type(components) == list):
                     for y in components:
@@ -66,7 +68,7 @@ def getRackmount(host=None, user=None, password=None):
             computeRackUnit = handle.query_children(in_dn="sys", class_id="computeRackUnit")
         except UcsException as e:
             handle.logout()
-            return 'Inrternal Server Error', e.error_descr, 500
+            return 'Internal Server Error', e.error_descr, 500
         else:
             if (type(computeRackUnit) == list):
                 for x in computeRackUnit:
@@ -78,7 +80,7 @@ def getRackmount(host=None, user=None, password=None):
                         macs = handle.query_children(in_dn=x.dn, class_id='PciEquipSlot')
                     except UcsException as e:
                         handle.logout()
-                        return 'Inrternal Server Error', e.error_descr, 500
+                        return 'Internal Server Error', e.error_descr, 500
                     for y in macs:
                         server["macs"].append(y.mac_left)
                         server["macs"].append(y.mac_right)
@@ -104,7 +106,7 @@ def getCatalog(host=None, user=None, password=None, identifier=None):
             elements = handle.query_children(in_dn=identifier)
         except UcsException as e:
             handle.logout()
-            return 'Inrternal Server Error', e.error_descr, 500
+            return 'Internal Server Error', e.error_descr, 500
         else:
             if (type(elements) == list):
                 for element in elements:
@@ -127,7 +129,7 @@ def getChassis(host=None, user=None, password=None):
         try:
             elememts = handle.query_children(in_dn="sys", class_id="EquipmentChassis")
         except UcsException as e:
-            return 'Inrternal Server Error', e.error_descr, 500
+            return 'Internal Server Error', e.error_descr, 500
         else:
             if (type(elememts) == list):
                 for element in elememts:
@@ -141,7 +143,7 @@ def getChassis(host=None, user=None, password=None):
                         blades = handle.query_children(in_dn=identifier, class_id='ComputeBlade')
                     except UcsException as e:
                         handle.logout()
-                        return 'Inrternal Server Error', e.error_descr, 500
+                        return 'Internal Server Error', e.error_descr, 500
                     else:
                         if (type(blades) == list):
                             for x in blades:
@@ -153,7 +155,7 @@ def getChassis(host=None, user=None, password=None):
                                     adptares = handle.query_children(in_dn=x.dn, class_id='AdaptorUnit')
                                 except UcsException as e:
                                     handle.logout()
-                                    return 'Inrternal Server Error', e.error_descr, 500
+                                    return 'Internal Server Error', e.error_descr, 500
                                 else:
                                     for x in adptares:
                                         server["macs"].append(x.base_mac)
@@ -216,6 +218,59 @@ def getServiceProfile(host=None, user=None, password=None):
             finalObjs[x["humanReadableName"]] = subElement
             handle.logout()
     return finalObjs
+
+
+@http_body_factory
+def powerMgmt(host=None, user=None, password=None, identifier=None, action=None):
+    handle = UcsHandle(host, user, password, secure=False)
+    if handle.login():
+        try:
+            data = _service_profile_power_set(handle=handle, dn=identifier, state=action)
+        except UcsException as e:
+            handle.logout()
+            return 'Internal Server Error', e.error_descr, 500
+        else:
+            handle.logout()
+            data = reduce(data.__dict__)
+        return data
+    else:
+        handle.logout()
+        return 'Forbidden', "", 403
+
+
+def _service_profile_power_set(handle, dn=None, state=None):
+    blade_mo = handle.query_dn(dn)
+    if blade_mo is None:
+        raise UcsException(
+            "service_profile_power_set: Failed to set element power",
+            "sever %s does not exist" % (dn))
+    elif blade_mo._class_id == "LsServer":
+        sp_mo = blade_mo
+    elif blade_mo.assigned_to_dn is None or blade_mo.assigned_to_dn == "":
+        raise UcsException(
+            "service_profile_power_set: Failed to set element power",
+            "sever %s is not associated to a service profile" % (dn))
+    else:
+        sp_mo = handle.query_dn(blade_mo.assigned_to_dn)
+    if state == "off":
+        state = LsPowerConsts.STATE_DOWN
+    elif state == "on":
+        state = LsPowerConsts.STATE_UP
+    elif state == "cycle-immediate":
+        state = LsPowerConsts.STATE_CYCLE_IMMEDIATE
+    elif state == "cycle-wait":
+        state = LsPowerConsts.STATE_CYCLE_WAIT
+    else:
+        raise UcsException(
+            "server_power_set: Failed to set server power",
+            "action %s is not valid. Choose one of the following: "
+            "'on', 'off', 'cycle-wait'or 'cycle-immediate'".format(state))
+    data = LsPower(
+        parent_mo_or_dn=sp_mo,
+        state=state)
+    handle.set_mo(sp_mo)
+    handle.commit()
+    return data
 
 
 def reduce(object):
