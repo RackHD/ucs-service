@@ -90,7 +90,7 @@ def getRackmount():
                         server["macs"].append(y.mac_right)
                     data.append(server)
                     handle.logout()
-                    return data
+                return data
             else:
                 handle.logout()
                 return "Couldn't fetch computeRackUnits:", "", 500
@@ -166,7 +166,7 @@ def getChassis():
                                     for x in adptares:
                                         server["macs"].append(x.base_mac)
                                     chassis["members"].append(server)
-                                    data.append(chassis)
+                            data.append(chassis)
                         else:
                             handle.logout()
                             return "Couldn't fetch ComputeBlade", "", 500
