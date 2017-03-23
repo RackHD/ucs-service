@@ -115,7 +115,7 @@ class test_default_controller(unittest.TestCase):
             self.assigned_to_dn = assigned_to_dn
 
     class mockServiceProfile:
-        def __init__(self, dn, class_id):
+        def __init__(self, dn, class_id, state=None):
             self.dn = dn
             self._class_id = class_id
 
@@ -397,8 +397,9 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.logout.assert_called_once()
         assert mock_ucs.return_value.query_dn.call_count == 2
         di = ({'status': 500, 'message': 'Internal Server Error',
-               'stack': "action %s is not valid. Choose one of the following: 'on', 'off', 'cycle-wait'or 'cycle-immediate'"},
-              500)
+               'stack': "action 'off3' is not valid. Choose one of the following: "
+                        "'on', 'off', 'cycle-wait','cycle-immediate', 'bmc-reset-immediate', "
+                        "'ipmi-reset', 'hard-reset-immediate', 'soft-shut-down' "}, 500)
         self.assertEqual(di, result, "Unexpected exception Data")
 
     @mock.patch('controllers.ucs_controller.request')
@@ -451,6 +452,45 @@ class test_default_controller(unittest.TestCase):
         mock_request.headers = MOCK_HEADER
         # call powerMgmt
         result = controler.powerMgmt(identifier=MOCK_ID)
+        # verify UCS Mocks were not called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.query_dn.assert_not_called()
+        self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
+
+    @mock.patch('controllers.ucs_controller.LsPowerConsts')
+    @mock.patch('controllers.ucs_controller.LsPower')
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    def testPowerStatusSuccess(self, mock_ucs, mock_request, mock_LsPower_Consts, mock_LsPower):
+        # setup UCS mocks
+        mock_LsPower_Consts.return_value.state.return_value = True
+        mock_LsPower.return_value.return_value = "off"
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_dn.side_effect = \
+            [self.mockBlade("Non_LsServer", "sys/chassis-3/blade-3", "org-root/ls-ps1"),
+             self.mockServiceProfile("org-root/ls-ps1", "LsServer"), ""]
+        mock_request.headers = MOCK_HEADER
+        # call powerMgmt
+        controler.powerStatus("sys/chassis-3/blade-3")
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        assert mock_ucs.return_value.query_dn.call_count == 2
+        # assert that the appropriate service profile constant has been set
+        assert mock_LsPower_Consts.state.value is not "off"
+
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    def testPowerStatusForbiden(self, mock_ucs, mock_request):
+        """Invoke a 403 http error"""
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = False
+        mock_request.headers = MOCK_HEADER
+        # call powerMgmt
+        result = controler.powerStatus(identifier=MOCK_ID)
         # verify UCS Mocks were not called
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
         mock_ucs.return_value.login.assert_called_once()

@@ -228,6 +228,24 @@ def getServiceProfile():
 
 
 @http_body_factory
+def powerStatus(identifier=None):
+    authInfo = _getUcsAuthInfo((request.headers))
+    handle = UcsHandle(*authInfo, secure=False)
+    if handle.login():
+        try:
+            state = _powerStatus(identifier, handle)
+        except UcsException as e:
+            handle.logout()
+            return 'Internal Server Error', e.error_descr, 500
+        else:
+            handle.logout()
+            return {"serverState": state}
+    else:
+        handle.logout()
+        return 'Forbidden', "", 403
+
+
+@http_body_factory
 def powerMgmt(identifier=None, action=None):
     authInfo = _getUcsAuthInfo((request.headers))
     handle = UcsHandle(*authInfo, secure=False)
@@ -268,16 +286,46 @@ def _service_profile_power_set(handle, dn=None, state=None):
         state = LsPowerConsts.STATE_CYCLE_IMMEDIATE
     elif state == "cycle-wait":
         state = LsPowerConsts.STATE_CYCLE_WAIT
+    elif state == "bmc-reset-immediate":
+        state = LsPowerConsts.STATE_BMC_RESET_IMMEDIATE
+    elif state == "ipmi-reset":
+        state = LsPowerConsts.STATE_IPMI_RESET
+    elif state == "hard-reset-immediate":
+        state = LsPowerConsts.STATE_HARD_RESET_IMMEDIATE
+    elif state == "soft-shut-down":
+        state = LsPowerConsts.STATE_SOFT_SHUT_DOWN
     else:
         raise UcsException(
             "server_power_set: Failed to set server power",
-            "action %s is not valid. Choose one of the following: "
-            "'on', 'off', 'cycle-wait'or 'cycle-immediate'".format(state))
+            "action '{0}' is not valid. Choose one of the following: "
+            "'on', 'off', 'cycle-wait','cycle-immediate', 'bmc-reset-immediate',"
+            " 'ipmi-reset', 'hard-reset-immediate', 'soft-shut-down' ".format(state))
     data = LsPower(
         parent_mo_or_dn=sp_mo,
         state=state)
     handle.set_mo(sp_mo)
     handle.commit()
+    return data
+
+
+def _powerStatus(dn, handle):
+    blade_mo = handle.query_dn(dn)
+    if blade_mo is None:
+        raise UcsException(
+            "service_profile_power_set: Failed to set element power",
+            "sever %s does not exist" % (dn))
+    elif blade_mo._class_id == "LsServer":
+        sp_mo = blade_mo
+    elif blade_mo.assigned_to_dn is None or blade_mo.assigned_to_dn == "":
+        raise UcsException(
+            "service_profile_power_set: Failed to set element power",
+            "sever %s is not associated to a service profile" % (dn))
+    else:
+        sp_mo = handle.query_dn(blade_mo.assigned_to_dn)
+    powerLs = LsPower(sp_mo)
+    handle.set_mo(sp_mo)
+    handle.commit()
+    data = powerLs.state
     return data
 
 

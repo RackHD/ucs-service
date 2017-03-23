@@ -216,11 +216,43 @@ paths:
         type: "string"
       - name: "action"
         in: "query"
-        description: "power action to be taken. Could be 'on', 'off', 'cycle-wait', 'cycle-immediate' "
+        description: "power action to be taken. Could be 'on', 'off', 'cycle-wait', 'cycle-immediate',
+        'bmc-reset-immediate', 'ipmi-reset', 'hard-reset-immediate', 'soft-shut-down' "
         required: false
         type: "string"
       responses:
         200:
           description: "Succesfully posted the power action"
+      x-tags:
+      - tag: "default"
+    get:
+      tags:
+      - "default"
+      description: "Return power status of ucs element"
+      operationId: "controllers.ucs_controller.powerStatus"
+      parameters:
+      - name: "ucs-host"
+        in: "header"
+        description: "USC manager host name or IP"
+        required: true
+        type: "string"
+      - name: "ucs-user"
+        in: "header"
+        description: "UCS manager user name"
+        required: true
+        type: "string"
+      - name: "ucs-password"
+        in: "header"
+        description: "UCS manager user password"
+        required: true
+        type: "string"
+      - name: "identifier"
+        in: "query"
+        description: "dn of the ucs element or the dn for the service profile"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Successfully fetched the power status for the ucs element"
       x-tags:
       - tag: "default"
