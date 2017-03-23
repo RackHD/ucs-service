@@ -16,10 +16,14 @@ MOCK_HEADER = {
 MOCK_DATA = 'data'
 MOCK_ID = 'sys/rack1'
 MOCK_ID_RACKMOUNT = "sys/rack-unit-7"
-MOCK_ID_MACS = "PciEquipSlot"
 MOCK_ID_CHASSIS = "sys/chassis-6"
+MOCK_ID_MACS = "PciEquipSlot"
+MOCK_MAC = "00:11:22:33:44:55"
+MOCK_MAC_2 = "11:22:33:44:55:66"
 MOCK_ID_COMPUTEBLADE = "sys/chassis-6/blade-1"
-MOCK_ID_ADATORUNIT = "sys/chassis-6/blade-1/adaptor-1"
+MOCK_ID_COMPUTEBLADE_2 = "sys/chassis-6/blade-2"
+MOCK_ID_ADAPTORUNIT = "sys/chassis-6/blade-1/adaptor-1"
+MOCK_ID_ADAPTORUNIT_2 = "sys/chassis-6/blade-2/adaptor-1"
 MOCK_ID_SERVICEPROFILE = "root"
 MOCK_ID_LOGICALSERVER = "org-root/ls-Profile3"
 MOCK_ID_LOGICALSERVER_MEMBER = {
@@ -236,14 +240,14 @@ class test_default_controller(unittest.TestCase):
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('controllers.ucs_controller.UcsHandle')
     def testGetChassisSuccess(self, mock_ucs, mock_request):
-        mac = '00:00:FF:FF:32:02'
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.logout.return_value = True
         mock_ucs.return_value.query_children.side_effect = \
             [[self.mockChassisClass(data=MOCK_ID_CHASSIS)],
-             [self.mockComputeBlade(data=MOCK_ID_COMPUTEBLADE)],
-             [self.mockAaptorUnit(MOCK_ID_ADATORUNIT, mac)]]
+             [self.mockComputeBlade(data=MOCK_ID_COMPUTEBLADE), self.mockComputeBlade(data=MOCK_ID_COMPUTEBLADE_2)],
+             [self.mockAaptorUnit(MOCK_ID_ADAPTORUNIT, MOCK_MAC)],
+             [self.mockAaptorUnit(MOCK_ID_ADAPTORUNIT_2, MOCK_MAC_2)]]
         mock_request.headers = MOCK_HEADER
         # call getChassis
         result = controler.getChassis()
@@ -252,12 +256,21 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.login.assert_called_once()
         mock_ucs.return_value.logout.assert_called_once()
         # verify return data
-        di = {
-            'macs': [mac],
-            'name': MOCK_ID_COMPUTEBLADE,
-            'path': MOCK_ID_COMPUTEBLADE
-        }
-        self.assertEqual(di, result[0]["members"][0], "Unexpected Chassis Data")
+        di = \
+            [
+                {
+                    'macs': [MOCK_MAC],
+                    'name': MOCK_ID_COMPUTEBLADE,
+                    'path': MOCK_ID_COMPUTEBLADE
+                },
+                {
+                    'macs': [MOCK_MAC_2],
+                    'name': MOCK_ID_COMPUTEBLADE_2,
+                    'path': MOCK_ID_COMPUTEBLADE_2
+                }
+            ]
+        self.assertEqual(1, len(result), "expected 1 chassis, got {}".format(len(result)))
+        self.assertEqual(di, result[0]["members"], "Unexpected Chassis Data")
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('controllers.ucs_controller.UcsHandle')
