@@ -52,10 +52,10 @@ def systemGetAll():
                         subElement = {"relative_path": "/" + (vars(y))["dn"]}
                         units.append(subElement)
                     finalObjs[x["humanReadableName"]] = units
-                    handle.logout()
                 else:
                     handle.logout()
                     return "Couldn't fetch " + x["ciscoXmlName"], "", 500
+        handle.logout()
         return finalObjs
     else:
         handle.logout()
@@ -89,7 +89,7 @@ def getRackmount():
                         server["macs"].append(y.mac_left)
                         server["macs"].append(y.mac_right)
                     data.append(server)
-                    handle.logout()
+                handle.logout()
                 return data
             else:
                 handle.logout()
@@ -223,7 +223,7 @@ def getServiceProfile():
                         logicalServer["assoc_state"] = obj.assoc_state
                         subElement["members"].append(logicalServer)
             finalObjs[x["humanReadableName"]] = subElement
-            handle.logout()
+    handle.logout()
     return finalObjs
 
 
