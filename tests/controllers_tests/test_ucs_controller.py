@@ -123,6 +123,12 @@ class test_default_controller(unittest.TestCase):
             self.dn = dn
             self._class_id = class_id
 
+    class mockManagedObject:
+        def __init__(self, dn, class_id, admin_power='policy'):
+            self.dn = dn
+            self._class_id = class_id
+            self.admin_power = admin_power
+
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('controllers.ucs_controller.UcsHandle')
     def testGetRackmountSuccess(self, mock_ucs, mock_request):
@@ -509,3 +515,76 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.login.assert_called_once()
         mock_ucs.return_value.query_dn.assert_not_called()
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
+
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    def testPowerPhysicalSuccess(self, mock_ucs, mock_request):
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mockBlade = self.mockBlade("LsServer", "ls-Chassis3Blade3", "sys/chassis-3/blade-3")
+        mockMo = self.mockManagedObject("org-root/ls-ps1", "LsServer")
+        mock_ucs.return_value.query_dn.side_effect = [mockBlade, mockMo, ""]
+        mock_request.headers = MOCK_HEADER
+
+        # call powerMgmt
+        controler.powerMgmt("ls-Chassis3Blade3", "off", True)
+
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        self.assertEqual(mock_ucs.return_value.query_dn.call_count, 2)
+        calls = [mock.call("ls-Chassis3Blade3"), mock.call("sys/chassis-3/blade-3")]
+        mock_ucs.return_value.query_dn.assert_has_calls(calls)
+        calls = [mock.call(mockMo)]
+        mock_ucs.return_value.set_mo.assert_has_calls(calls)
+        self.assertEqual(mockMo.admin_power, "admin-down")
+        mock_ucs.return_value.commit.assert_called_once()
+
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    def testPowerPhysicalSuccess2(self, mock_ucs, mock_request):
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mockMo = self.mockManagedObject("sys/chassis-3/blade-3", "compuetBlade")
+        mock_ucs.return_value.query_dn.side_effect = [mockMo, ""]
+        mock_request.headers = MOCK_HEADER
+
+        # call powerMgmt
+        controler.powerMgmt("sys/chassis-3/blade-3", "off", True)
+
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        self.assertEqual(mock_ucs.return_value.query_dn.call_count, 1)
+        calls = [mock.call("sys/chassis-3/blade-3")]
+        mock_ucs.return_value.query_dn.assert_has_calls(calls)
+        calls = [mock.call(mockMo)]
+        mock_ucs.return_value.set_mo.assert_has_calls(calls)
+        self.assertEqual(mockMo.admin_power, "admin-down")
+        mock_ucs.return_value.commit.assert_called_once()
+
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    def testPowerPhysicalFailuure(self, mock_ucs, mock_request):
+        # setup UCS mocks
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mockMo = self.mockManagedObject("sys/chassis-3/blade-3", "compuetBlade")
+        mock_ucs.return_value.query_dn.side_effect = [mockMo, ""]
+        mock_request.headers = MOCK_HEADER
+
+        # call powerMgmt
+        result = controler.powerMgmt("sys/chassis-3/blade-3", "foo", True)
+
+        # verify UCS Mocks were called
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.logout.assert_called_once()
+        self.assertEqual(mock_ucs.return_value.query_dn.call_count, 1)
+        calls = [mock.call("sys/chassis-3/blade-3")]
+        mock_ucs.return_value.query_dn.assert_has_calls(calls)
+        self.assertEqual(result[0]['status'], 500, "expected status 500")
