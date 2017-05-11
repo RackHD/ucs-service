@@ -220,6 +220,11 @@ paths:
         'bmc-reset-immediate', 'ipmi-reset', 'hard-reset-immediate', 'soft-shut-down' "
         required: false
         type: "string"
+      - name: "physical"
+        in: "query"
+        description: "if true send the power command to the physical server, false use the associated logical server"
+        required: false
+        type: "boolean"
       responses:
         200:
           description: "Succesfully posted the power action"

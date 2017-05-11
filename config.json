@@ -4,5 +4,5 @@
     "httpsEnabled": true,
     "certFile": null,
     "keyFile": null,
-    "debug": true
+    "debug": false
 }
