@@ -1,0 +1,12 @@
+Source: ucs-service
+Section: python
+Priority: extra
+Maintainer: RackHD <rackhd@emc.com>
+Build-Depends: debhelper (>= 8.0.0), python, dh-virtualenv (>= 0.8)
+Standards-Version: 3.9.5
+
+Package: ucs-service
+Architecture: any
+Pre-Depends: dpkg (>= 1.16.1), python2.7 | python2.6, ${misc:Pre-Depends}
+Depends: ${misc:Depends}
+Description: UCS server
