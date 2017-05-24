@@ -1,0 +1,6 @@
+app.py /var/renasar/ucs-service
+controllers /var/renasar/ucs-service
+config.json /var/renasar/ucs-service
+__init__.py /var/renasar/ucs-service
+requirements.txt /var/renasar/ucs-service
+swagger /var/renasar/ucs-service
