@@ -3,6 +3,7 @@
 https://coveralls.io/github/RackHD/ucs-service?branch=master)
 
 # ucs-service
+[![Coverage Status](https://coveralls.io/repos/github/RackHD/ucs-service/badge.svg?branch=master)](https://coveralls.io/github/RackHD/ucs-service?branch=master)
 
 ‘ucs-service’ is a module used by RackHD to interface with hardware being managed by a Cisco UCS manager
 
