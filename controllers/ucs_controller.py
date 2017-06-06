@@ -108,19 +108,16 @@ def getCatalog(identifier=None):
     handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         try:
-            elements = handle.query_children(in_dn=identifier)
+            elements = (handle.query_children(in_dn=identifier))
+            elements.append(handle.query_dn(dn=identifier))
+            for element in elements:
+                if (element):
+                    data.append(reduce(element.__dict__))
+            handle.logout()
+            return data
         except UcsException as e:
             handle.logout()
             return 'Internal Server Error', e.error_descr, 500
-        else:
-            if (type(elements) == list):
-                for element in elements:
-                    data.append(reduce(element.__dict__))
-                handle.logout()
-                return data
-            else:
-                handle.logout()
-                return "Couldn't fetch " + identifier, "", 500
     else:
         handle.logout()
         return 'Forbidden', "", 403

@@ -2,6 +2,7 @@
 
 import unittest
 import controllers.ucs_controller as controler
+from ucsmsdk.ucsexception import UcsException
 import mock
 
 EXPECTED_COOKIE = 'chocolate chip'
@@ -231,7 +232,9 @@ class test_default_controller(unittest.TestCase):
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.logout.return_value = True
-        mock_ucs.return_value.query_children.side_effect = [""]
+        mock_ucs.return_value.query_children.side_effect = [[]]
+        mock_ucs.return_value.query_dn.side_effect = UcsException(500, "Mock Server Error")
+
         mock_request.headers = MOCK_HEADER
         # call getCaltalog
         result = controler.getCatalog(identifier=MOCK_ID)
@@ -240,8 +243,11 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.login.assert_called_once()
         calls = [mock.call(in_dn=MOCK_ID)]
         mock_ucs.return_value.query_children.assert_has_calls(calls)
+        calls = [mock.call(dn=MOCK_ID)]
+        mock_ucs.return_value.query_dn.assert_has_calls(calls)
+
         # verify return data
-        self.assertEqual(result, ({'message': "Couldn't fetch sys/rack1", 'stack': '', 'status': 500}, 500))
+        self.assertEqual(result, ({'message': "Internal Server Error", 'stack': 'Mock Server Error', 'status': 500}, 500))
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('controllers.ucs_controller.UcsHandle')
