@@ -1,4 +1,4 @@
-ucs-service (2.10.1) UNRELEASED; urgency=low
+ucs-service (2.11.0) UNRELEASED; urgency=low
 
   * Initial release
   * release 2.7.0
@@ -7,5 +7,6 @@ ucs-service (2.10.1) UNRELEASED; urgency=low
   * release 2.9.0
   * release 2.10.0
   * release 2.10.1
+  * release 2.11.0
 
- -- rackhd <rackhd@emc.com>  Tue, 20 Jun 2017 08:46:35 -0400
+ -- rackhd <rackhd@emc.com>  Fri, 23 Jun 2017 22:31:41 -0400
