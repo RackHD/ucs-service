@@ -1,3 +1,4 @@
+dist: trusty
 language: python
 python:
   - "2.7"
@@ -7,11 +8,28 @@ matrix:
   allow_failures:
     - python: "3.6"
 
+# add deb build dependcy
+addons:
+  apt:
+    packages:
+      - dh-make
+      - devscripts
+      - debhelper
+      - fakeroot
+      - git
+
 #command to install dependencies
 install:
   - pip install -r requirements.txt
+  - pip install virtualenv --upgrade
 
 #command to run tests
-script: coverage run --source=. --omit=tests -m unittest discover -s tests
+script: 
+  - coverage run --source=. --omit=tests -m unittest discover -s tests
+  - sudo ./extra/install_dh-virtualenv.sh 
 
-after_success: coveralls
+after_success: 
+ - virtualenv --version
+ - dh_virtualenv --version
+ - coveralls
+ - ./extra/make-deb.sh
