@@ -1,4 +1,3 @@
----
 swagger: "2.0"
 info:
   version: "0.0.1"
@@ -133,6 +132,47 @@ paths:
           description: "Successful data fetch of rackmount catalogs"
       x-tags:
       - tag: "default"
+
+  /pollers:
+    get:
+      tags:
+      - "default"
+      description: "Returns a dict which contains pollers information with specified classIds"
+      operationId : "controllers.ucs_controller.getPollers"
+      parameters:
+      - name: "ucs-host"
+        in: "header"
+        description: "UCS manager host name or IP"
+        required: true
+        type: "string"
+      - name: "ucs-user"
+        in: "header"
+        description: "UCS manager user name"
+        required: true
+        type: "string"
+      - name: "ucs-password"
+        in: "header"
+        description: "UCS manager user password"
+        required: true
+        type: "string"
+      - name: "identifier"
+        in: "query"
+        description: "UCS node identifier"
+        required: true
+        type: "string"
+      - name: "classIds"
+        in: "query"
+        description: "UCS class id array"
+        required: true
+        type: "array"
+        items:
+          type: "string"
+      responses:
+        200:
+          description: "Successful data fetch of catalogs by class id"
+      x-tags:
+      - tag: "default"
+
   /chassis:
     get:
       tags:

@@ -33,6 +33,8 @@ MOCK_ID_LOGICALSERVER_MEMBER = {
     'pn_dn': 'sys/rack-unit-3',
     'rn': 'org-root/ls-Profile3'
 }
+MOCK_CLASS_IDS = ['processorEnvStats', 'memoryUnitEnvStats']
+MOCK_CLASS_ID_DATA = ['CPU', 'Mem']
 
 
 class test_default_controller(unittest.TestCase):
@@ -129,6 +131,10 @@ class test_default_controller(unittest.TestCase):
             self.dn = dn
             self._class_id = class_id
             self.admin_power = admin_power
+
+    class mockCatalogClass:
+        def __init__(self, data):
+            self.data = data
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('controllers.ucs_controller.UcsHandle')
@@ -594,3 +600,43 @@ class test_default_controller(unittest.TestCase):
         calls = [mock.call("sys/chassis-3/blade-3")]
         mock_ucs.return_value.query_dn.assert_has_calls(calls)
         self.assertEqual(result[0]['status'], 500, "expected status 500")
+
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    def testGetPollersSuccess(self, mock_ucs, mock_request):
+        """Get Pollers Successfully"""
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.return_value.query_classid.side_effect = [
+            [self.mockCatalogClass(data=MOCK_CLASS_ID_DATA[0])],
+            [self.mockCatalogClass(data=MOCK_CLASS_ID_DATA[1])]
+        ]
+        mock_request.headers = MOCK_HEADER
+        result = controler.getPollers(identifier=MOCK_ID, classIds=MOCK_CLASS_IDS)
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        calls = []
+        for i in range(2):
+            mocked_class_id = MOCK_CLASS_IDS[i]
+            print MOCK_CLASS_IDS
+            print mocked_class_id
+            mocked_filter_str = '(dn, "{}.*", type="re")'.format(MOCK_ID)
+            print mocked_filter_str
+            mocked_call = mock.call(class_id=mocked_class_id, filter_str=mocked_filter_str)
+            calls.append(mocked_call)
+            self.assertEqual(MOCK_CLASS_ID_DATA[i], result[mocked_class_id][0]['data'],
+                             'CPU data in result does not equal "{}"'.format(MOCK_CLASS_ID_DATA[i]))
+        mock_ucs.return_value.query_classid.assert_has_calls(calls)
+        mock_ucs.return_value.logout.assert_called_once()
+
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    def testGetPollersForbiden(self, mock_ucs, mock_request):
+        """Invoke a 403 http error"""
+        mock_ucs.return_value.login.return_value = False
+        mock_request.headers = MOCK_HEADER
+        result = controler.getPollers(identifier=MOCK_ID, classIds=MOCK_CLASS_IDS)
+        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
+        mock_ucs.return_value.login.assert_called_once()
+        mock_ucs.return_value.query_classid.assert_not_called()
+        self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
