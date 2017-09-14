@@ -1,5 +1,5 @@
 # Copyright 2017, Dell EMC, Inc.
-
+import re
 from ucsmsdk.ucshandle import UcsHandle
 from ucsmsdk.ucsexception import UcsException
 from flask import request
@@ -135,8 +135,12 @@ def getPollers(identifier, classIds):
     if handle.login():
         try:
             result = {}
+            excludeBade = ''
+            pattern = re.compile('^sys/chassis-\d{1,3}$')
+            if pattern.match(identifier):
+                excludeBade = ' and not (dn, ".*blade.*", type="re")'
             for class_id in classIds:
-                filter_str = '(dn, "{}.*", type="re")'.format(identifier)
+                filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
                 items = handle.query_classid(class_id=class_id, filter_str=filter_str)
                 colletion = []
                 for item in items:
