@@ -1,5 +1,5 @@
 # Copyright 2017, Dell EMC, Inc.
-
+import re
 from ucsmsdk.ucshandle import UcsHandle
 from ucsmsdk.ucsexception import UcsException
 from flask import request
@@ -121,6 +121,39 @@ def getCatalog(identifier=None):
     else:
         handle.logout()
         return 'Forbidden', "", 403
+
+
+@http_body_factory
+def getPollers(identifier, classIds):
+    """
+        Get node pollers data by given class ids
+        @param identifier: dn string of a node
+        @param classIds: a list of class ids to be retrieved
+    """
+    authInfo = _getUcsAuthInfo(request.headers)
+    handle = UcsHandle(*authInfo, secure=False)
+    if handle.login():
+        try:
+            result = {}
+            excludeBade = ''
+            pattern = re.compile('^sys/chassis-\d{1,3}$')
+            if pattern.match(identifier):
+                excludeBade = ' and not (dn, ".*blade.*", type="re")'
+            for class_id in classIds:
+                filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
+                items = handle.query_classid(class_id=class_id, filter_str=filter_str)
+                colletion = []
+                for item in items:
+                    colletion.append(reduce(item.__dict__))
+                result[class_id] = colletion
+            handle.logout()
+            return result
+        except UcsException as e:
+            handle.logout()
+            return 'Internal Server Error', e.error_descr, 500
+    else:
+        handle.logout()
+        return 'Forbidden', '', 403
 
 
 @http_body_factory
