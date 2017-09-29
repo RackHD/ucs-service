@@ -301,3 +301,20 @@ paths:
           description: "Successfully fetched the power status for the ucs element"
       x-tags:
       - tag: "default"
+  /test/{no}:
+    get:
+      tags:
+      - "default"
+      description: "Returns a catalog of rackmount servers"
+      operationId: "controllers.ucs_controller.getTest"
+      parameters:
+      - name: "no"
+        in: "path"
+        description: "USC manager host name or IP"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Successful data fetch of rackmount catalogs"
+      x-tags:
+      - tag: "default"

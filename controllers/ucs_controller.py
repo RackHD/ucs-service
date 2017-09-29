@@ -134,6 +134,7 @@ def getPollers(identifier, classIds):
     handle = UcsHandle(*authInfo, secure=False)
     if handle.login():
         try:
+            handle.set_mode_threading()
             result = {}
             excludeBade = ''
             pattern = re.compile('^sys/chassis-\d{1,3}$')
@@ -141,11 +142,14 @@ def getPollers(identifier, classIds):
                 excludeBade = ' and not (dn, ".*blade.*", type="re")'
             for class_id in classIds:
                 filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
+                print "begin......................"
                 items = handle.query_classid(class_id=class_id, filter_str=filter_str)
+                print "end........................."
                 colletion = []
                 for item in items:
                     colletion.append(reduce(item.__dict__))
                 result[class_id] = colletion
+            handle.unset_mode_threading()
             handle.logout()
             return result
         except UcsException as e:
@@ -274,6 +278,13 @@ def powerStatus(identifier=None):
         handle.logout()
         return 'Forbidden', "", 403
 
+@http_body_factory
+def getTest(no):
+    print 'begin..........'
+    import time
+    time.sleep(5)
+    print 'end..........'
+    return {"success": True, "no": no}
 
 @http_body_factory
 def powerMgmt(identifier=None, action=None, physical=False):

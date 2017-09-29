@@ -1,7 +1,7 @@
 {
     "address": "0.0.0.0",
     "port": 7080,
-    "httpsEnabled": true,
+    "httpsEnabled": false,
     "certFile": null,
     "keyFile": null,
     "debug": false
