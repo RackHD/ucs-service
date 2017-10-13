@@ -603,8 +603,10 @@ class test_default_controller(unittest.TestCase):
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('controllers.ucs_controller.UcsHandle')
-    def testGetPollersSuccess(self, mock_ucs, mock_request):
+    @mock.patch('controllers.ucs_controller.current_app')
+    def testGetPollersSuccess(self, mock_current_app, mock_ucs, mock_request):
         """Get Pollers Successfully"""
+        mock_current_app.config = {}
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.logout.return_value = True
         mock_ucs.return_value.query_classid.side_effect = [
@@ -613,25 +615,53 @@ class test_default_controller(unittest.TestCase):
         ]
         mock_request.headers = MOCK_HEADER
         result = controler.getPollers(identifier=MOCK_ID, classIds=MOCK_CLASS_IDS)
-        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
-        mock_ucs.return_value.login.assert_called_once()
         calls = []
         for i in range(2):
             mocked_class_id = MOCK_CLASS_IDS[i]
-            print MOCK_CLASS_IDS
-            print mocked_class_id
             mocked_filter_str = '(dn, "{}.*", type="re")'.format(MOCK_ID)
-            print mocked_filter_str
             mocked_call = mock.call(class_id=mocked_class_id, filter_str=mocked_filter_str)
             calls.append(mocked_call)
             self.assertEqual(MOCK_CLASS_ID_DATA[i], result[mocked_class_id][0]['data'],
                              'CPU data in result does not equal "{}"'.format(MOCK_CLASS_ID_DATA[i]))
         mock_ucs.return_value.query_classid.assert_has_calls(calls)
-        mock_ucs.return_value.logout.assert_called_once()
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('controllers.ucs_controller.UcsHandle')
-    def testGetPollersForbiden(self, mock_ucs, mock_request):
+    @mock.patch('controllers.ucs_controller.current_app')
+    def testGetPollersSuccessWithoutLogout(self, mock_current_app, mock_ucs, mock_request):
+        """Get Pollers Successfully Without Logout"""
+        mock_current_app.config = {
+            'handlers': {
+                HOST: {
+                    'username': USER,
+                    'password': PASS,
+                    'timestamp': None,
+                    'handle': mock_ucs
+                }
+            }
+        }
+        mock_ucs.return_value.login.return_value = True
+        mock_ucs.return_value.logout.return_value = True
+        mock_ucs.query_classid.side_effect = [
+            [self.mockCatalogClass(data=MOCK_CLASS_ID_DATA[0])],
+            [self.mockCatalogClass(data=MOCK_CLASS_ID_DATA[1])]
+        ]
+        mock_request.headers = MOCK_HEADER
+        result = controler.getPollers(identifier=MOCK_ID, classIds=MOCK_CLASS_IDS)
+        calls = []
+        for i in range(2):
+            mocked_class_id = MOCK_CLASS_IDS[i]
+            mocked_filter_str = '(dn, "{}.*", type="re")'.format(MOCK_ID)
+            mocked_call = mock.call(class_id=mocked_class_id, filter_str=mocked_filter_str)
+            calls.append(mocked_call)
+            self.assertEqual(MOCK_CLASS_ID_DATA[i], result[mocked_class_id][0]['data'],
+                             'CPU data in result does not equal "{}"'.format(MOCK_CLASS_ID_DATA[i]))
+        mock_ucs.query_classid.assert_has_calls(calls)
+
+    @mock.patch('controllers.ucs_controller.request')
+    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('controllers.ucs_controller.current_app')
+    def testGetPollersForbiden(self, mock_handle, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         mock_ucs.return_value.login.return_value = False
         mock_request.headers = MOCK_HEADER

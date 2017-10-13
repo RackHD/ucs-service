@@ -1,11 +1,11 @@
 # Copyright 2017, Dell EMC, Inc.
 import re
+import time
 from ucsmsdk.ucshandle import UcsHandle
 from ucsmsdk.ucsexception import UcsException
-from flask import request
+from flask import request, current_app
 from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
 from ucsmsdk.mometa.ls.LsPower import LsPower
-
 
 def login_get():
     authInfo = _getUcsAuthInfo((request.headers))
@@ -122,7 +122,6 @@ def getCatalog(identifier=None):
         handle.logout()
         return 'Forbidden', "", 403
 
-
 @http_body_factory
 def getPollers(identifier, classIds):
     """
@@ -130,31 +129,26 @@ def getPollers(identifier, classIds):
         @param identifier: dn string of a node
         @param classIds: a list of class ids to be retrieved
     """
-    authInfo = _getUcsAuthInfo(request.headers)
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        try:
-            result = {}
-            excludeBade = ''
-            pattern = re.compile('^sys/chassis-\d{1,3}$')
-            if pattern.match(identifier):
-                excludeBade = ' and not (dn, ".*blade.*", type="re")'
-            for class_id in classIds:
-                filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
-                items = handle.query_classid(class_id=class_id, filter_str=filter_str)
-                colletion = []
-                for item in items:
-                    colletion.append(reduce(item.__dict__))
-                result[class_id] = colletion
-            handle.logout()
-            return result
-        except UcsException as e:
-            handle.logout()
-            return 'Internal Server Error', e.error_descr, 500
-    else:
-        handle.logout()
+    handle = _getPollerHandler(request)
+    if not handle:
         return 'Forbidden', '', 403
-
+    try:
+        result = {}
+        excludeBade = ''
+        pattern = re.compile('^sys/chassis-\d{1,3}$')
+        if pattern.match(identifier):
+            excludeBade = ' and not (dn, ".*blade.*", type="re")'
+        for class_id in classIds:
+            filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
+            items = handle.query_classid(class_id=class_id, filter_str=filter_str)
+            colletion = []
+            for item in items:
+                colletion.append(reduce(item.__dict__))
+            result[class_id] = colletion
+        return result
+    except UcsException as e:
+        handle.logout()
+        return 'Internal Server Error', e.error_descr, 500
 
 @http_body_factory
 def getChassis():
@@ -429,6 +423,32 @@ def _powerStatus(dn, handle):
     handle.commit()
     data = powerLs.state
     return data
+
+
+def _getPollerHandler(request):
+    authInfo = _getUcsAuthInfo(request.headers)
+    host, user, password = authInfo
+    handlers = current_app.config.get('handlers')
+    handle = handlers.get(host) if handlers else None
+    if handle and handle['username'] == user and handle['password'] == password:
+        handle['timestamp'] = time.time()
+        return handle['handle']
+    else:
+        handle = UcsHandle(*authInfo, secure=False)
+        if handle.login():
+            data = {
+                'username': user,
+                'password': password,
+                'host': host,
+                'handle': handle,
+                'timestamp': time.time()
+            }
+            if 'handlers' not in current_app.config:
+                current_app.config['handlers'] = {}
+            current_app.config['handlers'][host] = data
+            return handle
+        else:
+            handle.logout()
 
 
 def _getUcsAuthInfo(headers):

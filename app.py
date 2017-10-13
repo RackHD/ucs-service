@@ -2,6 +2,7 @@
 
 import connexion
 import json
+import ThreadingTimer
 
 if __name__ == '__main__':
 
@@ -33,6 +34,7 @@ if __name__ == '__main__':
 
     app = connexion.App(__name__, specification_dir='./swagger/')
     app.add_api('swagger.yaml', arguments={'title': 'UCS Service'})
+    ThreadingTimer.ThreadingTimer(app)
     app.run(host=config['address'],
             port=config['port'],
             debug=config['debug'],
