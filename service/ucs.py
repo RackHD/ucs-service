@@ -25,6 +25,12 @@ class Ucs:
     def __init__(self):
         pass
 
+    def login_get(self, headers):
+        authInfo = self._getUcsAuthInfo(headers)
+        handle = UcsHandle(*authInfo, secure=False)
+        if handle.login():
+            return handle.cookie
+
     def systemGetAll(self, headers):
         authInfo = self._getUcsAuthInfo(headers)
         handle = UcsHandle(*authInfo, secure=False)
@@ -218,6 +224,95 @@ class Ucs:
         handle.logout()
         return {"data": data}
 
+    def getServiceProfile(self, headers):
+        authInfo = self._getUcsAuthInfo(headers)
+        handle = UcsHandle(*authInfo, secure=False)
+        if not handle.login():
+            handle.logout()
+            return {"error": "Forbidden"}
+        rootElements = [{
+            "ciscoXmlName": "orgOrg",
+            "humanReadableName": "ServiceProfile"
+        }]
+        finalObjs = {}
+        for x in rootElements:
+            subElement = {}
+            try:
+                components = handle.query_classid(x["ciscoXmlName"])
+            except UcsException as e:
+                handle.logout()
+                raise e
+            else:
+                if not (type(components) == list):
+                    handle.logout()
+                    return {
+                        "error": "Couldn't fetch " + x["humanReadableName"]
+                    }
+
+                for y in components:
+                    subElement["org"] = y.level
+                    subElement["members"] = []
+                    try:
+                        lsList = handle.query_children(
+                            in_dn="org-root", class_id="lsServer")
+                    except UcsException as e:
+                        handle.logout()
+                        raise e
+                    else:
+                        if not (type(lsList) == list):
+                            handle.logout()
+                            return {"error": "Couldn't fetch Logical Servers"}
+                        for item in lsList:
+                            logicalServer = {}
+                            identifier = item.dn
+                            obj = handle.query_dn(dn=identifier)
+                            logicalServer["name"] = obj.rn
+                            logicalServer["path"] = obj.dn
+                            logicalServer["associatedServer"] = obj.pn_dn
+                            logicalServer["assoc_state"] = obj.assoc_state
+                            subElement["members"].append(logicalServer)
+                finalObjs[x["humanReadableName"]] = subElement
+        handle.logout()
+        return {"data": finalObjs}
+
+    def powerStatus(self, headers, identifier=None):
+        authInfo = self._getUcsAuthInfo(headers)
+        handle = UcsHandle(*authInfo, secure=False)
+        if handle.login():
+            try:
+                state = self._powerStatus(identifier, handle)
+            except UcsException as e:
+                handle.logout()
+                raise e
+            else:
+                handle.logout()
+                return {"data": {"serverState": state}}
+        else:
+            handle.logout()
+            return {"error": "Forbidden"}
+
+    def powerMgmt(self, headers, identifier=None, action=None, physical=False):
+        authInfo = self._getUcsAuthInfo(headers)
+        handle = UcsHandle(*authInfo, secure=False)
+        if handle.login():
+            try:
+                if physical:
+                    data = self._physical_power_set(
+                        handle=handle, dn=identifier, state=action)
+                else:
+                    data = self._service_profile_power_set(
+                        handle=handle, dn=identifier, state=action)
+            except UcsException as e:
+                handle.logout()
+                raise e
+            else:
+                handle.logout()
+                data = self._reduce(data.__dict__)
+            return {"data": data}
+        else:
+            handle.logout()
+            return {"error": "Forbidden"}
+
     def _service_profile_power_set(self, handle, dn=None, state=None):
         blade_mo = handle.query_dn(dn)
         if blade_mo is None:
@@ -252,7 +347,7 @@ class Ucs:
             raise UcsException(
                 "server_power_set: Failed to set server power",
                 "action '{0}' is not valid. Choose one of the following: "
-                "'on', 'off', 'cycle-wait','cycle-immediate',"
+                "'on', 'off', 'cycle-wait','cycle-immediate', "
                 "'bmc-reset-immediate',"
                 " 'ipmi-reset', 'hard-reset-immediate', 'soft-shut-down' ".
                 format(state))
