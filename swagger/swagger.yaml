@@ -71,6 +71,33 @@ paths:
           description: "Successful data fetch"
       x-tags:
       - tag: "default"
+  /sysAsync:
+    get:
+      tags:
+      - "default"
+      description: "Discover USC managed objects"
+      operationId: "controllers.ucs_async_controller.systemGetAllAsync"
+      parameters:
+      - name: "ucs-host"
+        in: "header"
+        description: "USC manager host name or IP"
+        required: true
+        type: "string"
+      - name: "ucs-user"
+        in: "header"
+        description: "UCS manager user name"
+        required: true
+        type: "string"
+      - name: "ucs-password"
+        in: "header"
+        description: "UCS manager user password"
+        required: true
+        type: "string"
+      responses:
+        202:
+          description: "Accept data request"
+      x-tags:
+      - tag: "default"
 
   /rackmount:
     get:
