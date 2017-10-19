@@ -93,6 +93,11 @@ paths:
         description: "UCS manager user password"
         required: true
         type: "string"
+      - name: "taskId"
+        in: "query"
+        description: "UCS manager user password"
+        required: true
+        type: "string"
       responses:
         202:
           description: "Accept data request"

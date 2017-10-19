@@ -9,7 +9,7 @@ defaults = {
     "httpsEnabled": False,
     "certFile": None,
     "keyFile": None,
-    "debug": False,
+    "debug": False
 }
 
 # load config info

@@ -14,8 +14,9 @@ def _getSerializedHeaders(headers):
 
 @response_wrapper
 @status_handler(default_status=202)
-def systemGetAllAsync():
-    tasks.systemGetAll.delay(_getSerializedHeaders(request.headers))
+def systemGetAllAsync(taskId):
+    tasks.systemGetAll.delay("getRackmount", taskId,
+                             _getSerializedHeaders(request.headers))
     return {"data": "Accepted"}
 
 

@@ -5,61 +5,52 @@ from util.decorator import response_wrapper, status_handler
 
 
 def login_get():
-    service = Ucs()
-    return service.login_get(request.headers)
+    return Ucs.login_get(request.headers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def systemGetAll():
-    service = Ucs()
-    return service.systemGetAll(request.headers)
+    return Ucs.systemGetAll(request.headers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getRackmount():
-    service = Ucs()
-    return service.getRackmount(request.headers)
+    return Ucs.getRackmount(request.headers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getCatalog(identifier=None):
-    service = Ucs()
-    return service.getCatalog(request.headers, identifier)
+    return Ucs.getCatalog(request.headers, identifier)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getPollers(identifier, classIds):
-    service = Ucs()
-    return service.getPollers(request.headers, identifier, classIds)
+    return Ucs.getPollers(request.headers, identifier, classIds)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getChassis():
-    service = Ucs()
-    return service.getChassis(request.headers)
+    return Ucs.getChassis(request.headers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getServiceProfile():
-    service = Ucs()
-    return service.getServiceProfile(request.headers)
+    return Ucs.getServiceProfile(request.headers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def powerStatus(identifier=None):
-    service = Ucs()
-    return service.powerStatus(request.headers, identifier)
+    return Ucs.powerStatus(request.headers, identifier)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def powerMgmt(identifier=None, action=None, physical=False):
-    service = Ucs()
-    return service.powerMgmt(request.headers, identifier, action, physical)
+    return Ucs.powerMgmt(request.headers, identifier, action, physical)
