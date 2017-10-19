@@ -23,26 +23,7 @@ callbackUrl = config['callbackUrl']
 
 
 @app.task
-def add(x, y):
-    print 'add function starting...'
-    import time
-    print 'start sleep 10s...'
-    time.sleep(10)
-    print 'end sleep 10s...'
-    z = x + y
-    print z
-    print 'add function ending...'
-    print 'start to send http request to on-http'
-
-
-@app.task
-def systemGetAll_(headers, taskId):
-    result = Ucs.systemGetAll(headers)
-    sendHttpRequest.delay(taskId, result)
-
-
-@app.task
-def systemGetAll(funcName, taskId, *args, **kwargs):
+def handleService(funcName, taskId, *args, **kwargs):
     result = getattr(Ucs, funcName)(*args, **kwargs)
     print result
     sendHttpRequest.delay(taskId, result)
@@ -56,7 +37,7 @@ def sendHttpRequest(taskId, data):
         'content-type': "application/json",
     }
     requests.request(
-        "POST", url, data=data, headers=headers, params=querystring)
+        "POST", url, json=data, headers=headers, params=querystring)
 
 
 if __name__ == "__main__":
