@@ -376,10 +376,10 @@ class Ucs:
             raise UcsException(
                 "physical_power_set: Failed to set element power",
                 "sever %s does not exist" % (dn))
-        elif (mo._class_id == "LsServer" and mo.assigned_to_dn is not None
+        elif (mo._class_id == "LsServer" and mo.assigned_to_dn is not None \
               and mo.assigned_to_dn != ""):
-            server_mo = handle.query_dn(mo.assigned_to_dn)
-        elif (mo._class_id == "ComputeRackUnit"
+            server_mo = handle.query_dn(mo.assigned_to_dn) 
+        elif (mo._class_id == "ComputeRackUnit" \
               or mo._class_id == "compuetBlade"):
             server_mo = mo
         else:
