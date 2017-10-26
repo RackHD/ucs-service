@@ -46,7 +46,7 @@ class test_default_controller(unittest.TestCase):
         print "running teardown"
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testLoginSuccess(self, mock_ucs, mock_request):
         print "running test"
         mock_ucs.return_value.login.return_value = True
@@ -58,7 +58,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(cookie, EXPECTED_COOKIE, 'returned cookie %s does not equal %s' % (cookie, EXPECTED_COOKIE))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testLoginFailure(self, mock_ucs, mock_request):
         print "running test"
         mock_ucs.return_value.login.return_value = False
@@ -137,7 +137,7 @@ class test_default_controller(unittest.TestCase):
             self.data = data
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetRackmountSuccess(self, mock_ucs, mock_request):
         left_mac = "00:00:FF:38:64:00"
         right_mac = "00:00:FF:38:64:01"
@@ -165,7 +165,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(di, result[0], 'result does not contain member "data"')
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetRackmounForbidden(self, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         # setup UCS mocks
@@ -180,7 +180,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetRackmounInternalServerError(self, mock_ucs, mock_request):
         """Invoke a 500 http error"""
         mock_ucs.return_value.logout.return_value = True
@@ -192,10 +192,10 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
         mock_ucs.return_value.login.assert_called_once()
         # verify return data
-        self.assertEqual(result, ({'message': "Couldn't fetch computeRackUnits:", 'stack': '', 'status': 500}, 500))
+        self.assertEqual(result, ({'message': "Couldn't fetch computeRackUnits", 'stack': '', 'status': 500}, 500))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetCatalogSuccess(self, mock_ucs, mock_request):
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
@@ -217,7 +217,7 @@ class test_default_controller(unittest.TestCase):
 
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetCatalogForbiden(self, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         # setup UCS mocks
@@ -232,7 +232,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetCatalogInternalServerError(self, mock_ucs, mock_request):
         """Invoke a 500 http error"""
         # setup UCS mocks
@@ -256,7 +256,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(result, ({'message': "Internal Server Error", 'stack': 'Mock Server Error', 'status': 500}, 500))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetChassisSuccess(self, mock_ucs, mock_request):
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
@@ -291,7 +291,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(di, result[0]["members"], "Unexpected Chassis Data")
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetChassisForbiden(self, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         # setup UCS mocks
@@ -306,7 +306,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetChassisInternalServerError(self, mock_ucs, mock_request):
         """Invoke a 500 http error"""
         # setup UCS mocks
@@ -323,7 +323,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(result, ({'status': 500, 'message': "Couldn't fetch EquipmentChassis", 'stack': ''}, 500))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetServiceProfileSuccess(self, mock_ucs, mock_request):
         serverData = "sys/rack-unit-3"
         state = "associated"
@@ -355,7 +355,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(di, result['ServiceProfile']['members'][0], "Unexpected Chassis Data")
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetServiceProfileForbiden(self, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         # setup UCS mocks
@@ -370,7 +370,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetServiceProfileInternalServerError(self, mock_ucs, mock_request):
         """Invoke a 500 http error"""
         # setup UCS mocks
@@ -386,10 +386,10 @@ class test_default_controller(unittest.TestCase):
         # verify return data
         self.assertEqual(result, ({'status': 500, 'message': "Couldn't fetch ServiceProfile", 'stack': ''}, 500))
 
-    @mock.patch('controllers.ucs_controller.LsPowerConsts')
-    @mock.patch('controllers.ucs_controller.LsPower')
+    @mock.patch('service.ucs.LsPower')
+    @mock.patch('service.ucs.LsPowerConsts')
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerSuccess(self, mock_ucs, mock_request, mock_LsPower_Consts, mock_LsPower):
         # setup UCS mocks
         mock_LsPower_Consts.return_value.STATE_DOWN.return_value = True
@@ -411,7 +411,7 @@ class test_default_controller(unittest.TestCase):
         assert mock_LsPower_Consts.STATE_DOWN is not None
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerInternalServerError_1(self, mock_ucs, mock_request):
         """Invoke a 500 http error by sending an invalid power operation 'off3'"""
         mock_ucs.return_value.login.return_value = True
@@ -434,7 +434,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(di, result, "Unexpected exception Data")
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerInternalServerError_2(self, mock_ucs, mock_request):
         """Invoke a 500 http error by sending an invalid dn"""
         mock_ucs.return_value.login.return_value = True
@@ -454,7 +454,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(di, result, "Unexpected exception Data")
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerInternalServerError_3(self, mock_ucs, mock_request):
         """Invoke a 500 http error by not associating a server to a service profile"""
         mock_ucs.return_value.login.return_value = True
@@ -475,7 +475,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(di, result, "Unexpected exception Data")
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerMgmtForbiden(self, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         # setup UCS mocks
@@ -489,10 +489,10 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.query_dn.assert_not_called()
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
-    @mock.patch('controllers.ucs_controller.LsPowerConsts')
-    @mock.patch('controllers.ucs_controller.LsPower')
+    @mock.patch('service.ucs.LsPower')
+    @mock.patch('service.ucs.LsPowerConsts')
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerStatusSuccess(self, mock_ucs, mock_request, mock_LsPower_Consts, mock_LsPower):
         # setup UCS mocks
         mock_LsPower_Consts.return_value.state.return_value = True
@@ -513,8 +513,9 @@ class test_default_controller(unittest.TestCase):
         # assert that the appropriate service profile constant has been set
         assert mock_LsPower_Consts.state.value is not "off"
 
+
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerStatusForbiden(self, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         # setup UCS mocks
@@ -528,8 +529,9 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.query_dn.assert_not_called()
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
+
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerPhysicalSuccess(self, mock_ucs, mock_request):
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
@@ -555,7 +557,7 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.commit.assert_called_once()
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerPhysicalSuccess2(self, mock_ucs, mock_request):
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
@@ -580,7 +582,7 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.commit.assert_called_once()
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testPowerPhysicalFailuure(self, mock_ucs, mock_request):
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
@@ -602,7 +604,7 @@ class test_default_controller(unittest.TestCase):
         self.assertEqual(result[0]['status'], 500, "expected status 500")
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetPollersSuccess(self, mock_ucs, mock_request):
         """Get Pollers Successfully"""
         mock_ucs.return_value.login.return_value = True
@@ -618,10 +620,7 @@ class test_default_controller(unittest.TestCase):
         calls = []
         for i in range(2):
             mocked_class_id = MOCK_CLASS_IDS[i]
-            print MOCK_CLASS_IDS
-            print mocked_class_id
             mocked_filter_str = '(dn, "{}.*", type="re")'.format(MOCK_ID)
-            print mocked_filter_str
             mocked_call = mock.call(class_id=mocked_class_id, filter_str=mocked_filter_str)
             calls.append(mocked_call)
             self.assertEqual(MOCK_CLASS_ID_DATA[i], result[mocked_class_id][0]['data'],
@@ -630,7 +629,7 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.logout.assert_called_once()
 
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('controllers.ucs_controller.UcsHandle')
+    @mock.patch('service.ucs.UcsHandle')
     def testGetPollersForbiden(self, mock_ucs, mock_request):
         """Invoke a 403 http error"""
         mock_ucs.return_value.login.return_value = False
