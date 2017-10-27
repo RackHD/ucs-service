@@ -620,10 +620,7 @@ class test_default_controller(unittest.TestCase):
         calls = []
         for i in range(2):
             mocked_class_id = MOCK_CLASS_IDS[i]
-            print MOCK_CLASS_IDS
-            print mocked_class_id
             mocked_filter_str = '(dn, "{}.*", type="re")'.format(MOCK_ID)
-            print mocked_filter_str
             mocked_call = mock.call(class_id=mocked_class_id, filter_str=mocked_filter_str)
             calls.append(mocked_call)
             self.assertEqual(MOCK_CLASS_ID_DATA[i], result[mocked_class_id][0]['data'],
