@@ -49,7 +49,8 @@ def sendHttpRequest(taskId, data):
         'content-type': "application/json"
     }
     res = requests.request(
-        "POST", url, data=data, headers=headers, params=query_string)
+        "POST", url, json=data, headers=headers, params=query_string
+    )
     if res.status_code != 201:
         print "Error to post data back to RackHD via API: {}".format(callbackUrl)
         print res.content

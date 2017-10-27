@@ -38,7 +38,6 @@ paths:
         description: "UCS manager user password"
         required: true
         type: "string"
-
       responses:
         200:
           description: "Successful login"
@@ -71,39 +70,6 @@ paths:
           description: "Successful data fetch"
       x-tags:
       - tag: "default"
-  /sysAsync:
-    get:
-      tags:
-      - "default"
-      description: "Discover USC managed objects"
-      operationId: "controllers.ucs_async_controller.systemGetAllAsync"
-      parameters:
-      - name: "ucs-host"
-        in: "header"
-        description: "USC manager host name or IP"
-        required: true
-        type: "string"
-      - name: "ucs-user"
-        in: "header"
-        description: "UCS manager user name"
-        required: true
-        type: "string"
-      - name: "ucs-password"
-        in: "header"
-        description: "UCS manager user password"
-        required: true
-        type: "string"
-      - name: "taskId"
-        in: "query"
-        description: "UCS manager user password"
-        required: true
-        type: "string"
-      responses:
-        202:
-          description: "Accept data request"
-      x-tags:
-      - tag: "default"
-
   /rackmount:
     get:
       tags:
@@ -131,7 +97,6 @@ paths:
           description: "Successful data fetch of rackmount"
       x-tags:
       - tag: "default"
-
   /catalog:
     get:
       tags:
@@ -164,7 +129,6 @@ paths:
           description: "Successful data fetch of rackmount catalogs"
       x-tags:
       - tag: "default"
-
   /pollers:
     get:
       tags:
@@ -204,7 +168,50 @@ paths:
           description: "Successful data fetch of catalogs by class id"
       x-tags:
       - tag: "default"
-
+  /pollers/async:
+    get:
+      tags:
+      - "default"
+      description: "Get pollers information asynchronously" 
+      operationId: "controllers.ucs_async_controller.getPollersAsync"
+      parameters:
+      - name: "ucs-host"
+        in: "header"
+        description: "USC manager host name or IP"
+        required: true
+        type: "string"
+      - name: "ucs-user"
+        in: "header"
+        description: "UCS manager user name"
+        required: true
+        type: "string"
+      - name: "ucs-password"
+        in: "header"
+        description: "UCS manager user password"
+        required: true
+        type: "string"
+      - name: "taskId"
+        in: "query"
+        description: "UCS manager user password"
+        required: true
+        type: "string"
+      - name: "identifier"
+        in: "query"
+        description: "UCS node identifier"
+        required: true
+        type: "string"
+      - name: "classIds"
+        in: "query"
+        description: "UCS class id array"
+        required: true
+        type: "array"
+        items:
+          type: "string"
+      responses:
+        202:
+          description: "Accept data request"
+      x-tags:
+      - tag: "default"
   /chassis:
     get:
       tags:

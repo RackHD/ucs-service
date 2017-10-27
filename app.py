@@ -1,7 +1,10 @@
 # Copyright 2017, Dell EMC, Inc.
 
-import connexion
 import json
+import atexit
+import connexion
+from flask import current_app
+from util import util
 
 defaults = {
     "address": "0.0.0.0",
@@ -28,13 +31,26 @@ elif 'certFile' not in config or config['certFile'] is None or \
     context = 'adhoc'
 else:
     context = (config['certFile'], config['keyFile'])
+
 app = connexion.App(__name__, specification_dir='./swagger/')
 app.add_api('swagger.yaml', arguments={'title': 'UCS Service'})
-application = app.app
+
+with app.app.app_context():
+    current_app.config['handlers'] = {}
+
+@atexit.register
+def cleanup():
+    """
+    App clean up
+    """
+    with app.app.app_context():
+        handlers = current_app.config.get("handlers")
+        util.cleanup_ucs_handler(handlers)
 
 if __name__ == '__main__':
     app.run(
         host=config['address'],
         port=config['port'],
         debug=config['debug'],
-        ssl_context=context)
+        ssl_context=context
+    )

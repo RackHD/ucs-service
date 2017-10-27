@@ -1,10 +1,12 @@
 #  Copyright 2017, Dell EMC, Inc.
 import re
+import time
 from ucsmsdk.ucsexception import UcsException
 from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
 from ucsmsdk.mometa.ls.LsPower import LsPower
 from ucsmsdk.ucshandle import UcsHandle
 
+SESSION_DURATION = 60
 
 class Ucs:
     """Representation of a UCS"""
@@ -122,40 +124,32 @@ class Ucs:
             return {"error": "Forbidden"}
 
     @staticmethod
-    def getPollers(headers, identifier, classIds):
+    def getPollers(headers, identifier, classIds, handlers=None):
         """
             Get node pollers data by given class ids
             @param identifier: dn string of a node
             @param classIds: a list of class ids to be retrieved
         """
-        authInfo = Ucs._getUcsAuthInfo(headers)
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            try:
-                handle.set_mode_threading()
-                result = {}
-                excludeBade = ''
-                pattern = re.compile('^sys/chassis-\d{1,3}$')
-                if pattern.match(identifier):
-                    excludeBade = ' and not (dn, ".*blade.*", type="re")'
-                for class_id in classIds:
-                    filter_str = '(dn, "{}.*", type="re"){}'.format(
-                        identifier, excludeBade)
-                    items = handle.query_classid(
-                        class_id=class_id, filter_str=filter_str)
-                    colletion = []
-                    for item in items:
-                        colletion.append(Ucs._reduce(item.__dict__))
-                    result[class_id] = colletion
-                handle.unset_mode_threading()
-                handle.logout()
-                return {"data": result}
-            except UcsException as e:
-                handle.logout()
-                raise e
-        else:
-            handle.logout()
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
+        try:
+            result = {}
+            excludeBade = ''
+            pattern = re.compile('^sys/chassis-\d{1,3}$')
+            if pattern.match(identifier):
+                excludeBade = ' and not (dn, ".*blade.*", type="re")'
+            for class_id in classIds:
+                filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
+                items = handle.query_classid(class_id=class_id, filter_str=filter_str)
+                colletion = []
+                for item in items:
+                    colletion.append(Ucs._reduce(item.__dict__))
+                result[class_id] = colletion
+            return {"data": result}
+        except UcsException as e:
+            handle.logout()
+            raise e
 
     @staticmethod
     def getChassis(headers):
@@ -460,3 +454,36 @@ class Ucs:
             if (property[0] == "_"):
                 del object[property]
         return object
+
+    @staticmethod
+    def _getHandler(headers, handlers):
+        host, user, password = Ucs._getUcsAuthInfo(headers)
+        timestamp = time.time()
+        handle_obj = handlers.get(host, None)
+        ucs_handle = handle_obj and handle_obj.get('ucs-handle', None)
+        is_auth_valid = handle_obj \
+            and handle_obj.get('ucs-user') == user \
+            and handle_obj.get('ucs-password') == password \
+            and (timestamp - handle_obj['timestamp']) < SESSION_DURATION
+
+        if is_auth_valid:
+            handle_obj['timestamp'] = timestamp
+        else:
+            if ucs_handle:
+                ucs_handle.logout()
+            authInfo = Ucs._getUcsAuthInfo(headers)
+            ucs_handle = UcsHandle(*authInfo, secure=False)
+            if ucs_handle.login():
+                ucs_handle_obj = {
+                    'ucs-user': user,
+                    'ucs-password': password,
+                    'ucs-host': host,
+                    'ucs-handle': ucs_handle,
+                    'timestamp': timestamp
+                }
+                handlers[host] = ucs_handle_obj
+            else:
+                ucs_handle.logout()
+                return None
+        return ucs_handle
+
