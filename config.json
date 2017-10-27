@@ -4,5 +4,6 @@
     "httpsEnabled": true,
     "certFile": null,
     "keyFile": null,
-    "debug": false
+    "debug": false,
+    "callbackUrl": "http://10.62.59.210:8080/api/current/ucsCallback"
 }
