@@ -162,7 +162,7 @@ class test_default_controller(unittest.TestCase):
             'name': MOCK_ID_RACKMOUNT,
             'path': MOCK_ID_RACKMOUNT
         }
-        self.assertEqual(di, result[0], 'result does not contain member "data"')
+        self.assertEqual(di, result[0][0], 'result does not contain member "data"')
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
@@ -211,8 +211,8 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.query_children.assert_has_calls(calls)
         mock_ucs.return_value.logout.assert_called_once()
         # verify return data
-        self.assertIn({'data': 'data'}, result, 'result does not contain member "data"')
-        self.assertEqual(MOCK_DATA, result[0]['data'], 'result["data"] does not equal "{}"'.format(MOCK_DATA))
+        self.assertIn({'data': 'data'}, result[0], 'result does not contain member "data"')
+        self.assertEqual(MOCK_DATA, result[0][0]['data'], 'result["data"] does not equal "{}"'.format(MOCK_DATA))
         self.assertNotIn('_privData', result, 'result contains private member "_privData"')\
 
 
@@ -287,8 +287,10 @@ class test_default_controller(unittest.TestCase):
                     'path': MOCK_ID_COMPUTEBLADE_2
                 }
             ]
-        self.assertEqual(1, len(result), "expected 1 chassis, got {}".format(len(result)))
-        self.assertEqual(di, result[0]["members"], "Unexpected Chassis Data")
+        print '=======>'
+        print result
+        self.assertEqual(1, len(result[0]), "expected 1 chassis, got {}".format(len(result)))
+        self.assertEqual(di, result[0][0]["members"], "Unexpected Chassis Data")
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
@@ -352,7 +354,7 @@ class test_default_controller(unittest.TestCase):
             'associatedServer': serverData,
             'assoc_state': state
         }
-        self.assertEqual(di, result['ServiceProfile']['members'][0], "Unexpected Chassis Data")
+        self.assertEqual(di, result[0]['ServiceProfile']['members'][0], "Unexpected Chassis Data")
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
@@ -623,7 +625,7 @@ class test_default_controller(unittest.TestCase):
             mocked_filter_str = '(dn, "{}.*", type="re")'.format(MOCK_ID)
             mocked_call = mock.call(class_id=mocked_class_id, filter_str=mocked_filter_str)
             calls.append(mocked_call)
-            self.assertEqual(MOCK_CLASS_ID_DATA[i], result[mocked_class_id][0]['data'],
+            self.assertEqual(MOCK_CLASS_ID_DATA[i], result[0][mocked_class_id][0]['data'],
                              'CPU data in result does not equal "{}"'.format(MOCK_CLASS_ID_DATA[i]))
         mock_ucs.return_value.query_classid.assert_has_calls(calls)
         mock_ucs.return_value.logout.assert_called_once()
