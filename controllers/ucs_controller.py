@@ -2,7 +2,6 @@
 from flask import request, current_app
 from service.ucs import Ucs
 from util.decorator import response_wrapper, status_handler
-from util.util import serialize_ucs_http_headers
 
 
 def login_get():
@@ -32,7 +31,7 @@ def getCatalog(identifier=None):
 def getPollers(identifier, classIds):
     handlers = current_app.config.get("handlers")  or {}
     return Ucs.getPollers(
-        request.headers, ## Should serilize?
+        request.headers,
         identifier,
         classIds,
         handlers=handlers

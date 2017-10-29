@@ -9,7 +9,7 @@ from ucsmsdk.ucshandle import UcsHandle
 SESSION_DURATION = 60
 
 class Ucs:
-    """Representation of a UCS"""
+    """Representation of UCS methods collection"""
 
     @staticmethod
     def login_get(headers):
@@ -457,21 +457,21 @@ class Ucs:
 
     @staticmethod
     def _getHandler(headers, handlers):
-        host, user, password = Ucs._getUcsAuthInfo(headers)
+        authInfo = Ucs._getUcsAuthInfo(headers)
+        host, user, password = authInfo
         timestamp = time.time()
         handle_obj = handlers.get(host, None)
         ucs_handle = handle_obj and handle_obj.get('ucs-handle', None)
-        is_auth_valid = handle_obj \
+        is_auth_valid = ucs_handle \
             and handle_obj.get('ucs-user') == user \
             and handle_obj.get('ucs-password') == password \
             and (timestamp - handle_obj['timestamp']) < SESSION_DURATION
-
         if is_auth_valid:
             handle_obj['timestamp'] = timestamp
         else:
             if ucs_handle:
+                # logout existing handler if it is invalid
                 ucs_handle.logout()
-            authInfo = Ucs._getUcsAuthInfo(headers)
             ucs_handle = UcsHandle(*authInfo, secure=False)
             if ucs_handle.login():
                 ucs_handle_obj = {
@@ -486,4 +486,3 @@ class Ucs:
                 ucs_handle.logout()
                 return None
         return ucs_handle
-
