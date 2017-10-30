@@ -18,10 +18,10 @@ class test_default_tasks(unittest.TestCase):
     def tearDown(self):
         print "tasks tests running tear down"
 
-
     class mockRequestResponse:
+
         def __init__(self):
-            self.status_code = 201
+            self.status_code = 200
             self.content = "mock_request_response_data"
 
     @mock.patch('tasks.requests.request')

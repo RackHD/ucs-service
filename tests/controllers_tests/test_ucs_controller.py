@@ -130,10 +130,6 @@ class test_default_controller(unittest.TestCase):
             self._class_id = class_id
             self.admin_power = admin_power
 
-    class mockCatalogClass:
-        def __init__(self, data):
-            self.data = data
-
     class mockCurrentApp:
         config = None
 
@@ -517,7 +513,6 @@ class test_default_controller(unittest.TestCase):
         # assert that the appropriate service profile constant has been set
         assert mock_LsPower_Consts.state.value is not "off"
 
-
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
     def testPowerStatusForbiden(self, mock_ucs, mock_request):
@@ -532,7 +527,6 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.login.assert_called_once()
         mock_ucs.return_value.query_dn.assert_not_called()
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
-
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')

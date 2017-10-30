@@ -60,15 +60,8 @@ class test_default_tasks(unittest.TestCase):
     def testLoadConfigSuccess(self, mock_json):
         """Test load config file successfully"""
         mock_json.load.return_value = MOCK_CONFIG
-        result = util.load_config(MOCK_DEFAULT)
+        result = util.load_config()
         self.assertEqual(result, MOCK_CONFIG)
-
-    @mock.patch('util.util.json')
-    def testLoadConfigFailed(self, mock_json):
-        """Test load config file failed"""
-        mock_json.load.side_effect = self.sideEffect
-        result = util.load_config(MOCK_DEFAULT)
-        self.assertEqual(result, MOCK_DEFAULT)
 
     def testSetupSslContext(self):
         """Test setup ssl context"""

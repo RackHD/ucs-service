@@ -8,6 +8,7 @@ from ucsmsdk.ucshandle import UcsHandle
 
 SESSION_DURATION = 60
 
+
 class Ucs:
     """Representation of UCS methods collection"""
 
@@ -365,11 +366,11 @@ class Ucs:
             raise UcsException(
                 "physical_power_set: Failed to set element power",
                 "sever %s does not exist" % (dn))
-        elif (mo._class_id == "LsServer" and mo.assigned_to_dn is not None
-              and mo.assigned_to_dn != ""):
+        elif (mo._class_id == "LsServer" and mo.assigned_to_dn is not None and
+              mo.assigned_to_dn != ""):
             server_mo = handle.query_dn(mo.assigned_to_dn)
-        elif (mo._class_id == "ComputeRackUnit"
-              or mo._class_id == "compuetBlade"):
+        elif (mo._class_id == "ComputeRackUnit" or
+              mo._class_id == "compuetBlade"):
             server_mo = mo
         else:
             raise UcsException(

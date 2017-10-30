@@ -4,6 +4,7 @@ import json
 
 CONFIG_FILE = 'config.json'
 
+
 def cleanup_ucs_handler(handler_obj):
     """
     Clean up UCS handler object
@@ -25,17 +26,13 @@ def serialize_ucs_http_headers(headers):
     }
 
 
-def load_config(defaults):
+def load_config():
     """
     Load configuration from config file
     """
     config = {}
-    try:
-        with open(CONFIG_FILE) as config_data:
-            config = json.load(config_data)
-    except:
-        print "Error loading config.json, using defaults!"
-        config = defaults
+    with open(CONFIG_FILE) as config_data:
+        config = json.load(config_data)
     return config
 
 
@@ -45,8 +42,8 @@ def setup_ssl_context(config):
     """
     if 'httpsEnabled' not in config or not config['httpsEnabled']:
         context = None
-    elif 'certFile' not in config or config['certFile'] is None or \
-        'keyFile' not in config or config['keyFile'] is None:
+    elif ('certFile' not in config or config['certFile'] is None or
+          'keyFile' not in config or config['keyFile'] is None):
         context = 'adhoc'
     else:
         context = (config['certFile'], config['keyFile'])

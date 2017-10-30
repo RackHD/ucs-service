@@ -8,15 +8,12 @@ from util import util
 
 # Work process level global handlers to minimize UCSM login/logout actions
 handlers = {}
-defaults = {
-    "callbackUrl": "http://10.62.59.210:8080/api/current/ucsCallback",
-    "concurrency": 2
-}
-config = util.load_config(defaults)
+config = util.load_config()
 callbackUrl = config['callbackUrl']
-amqp = "amqp://localhost"
+amqp = config["amqp"]
 app = Celery("tasks", broker=amqp)
 app.conf.update(worker_concurrency=config.get("concurrency", 2))
+
 
 def worker_process_cleanup(**kwargs):
     """
@@ -25,8 +22,10 @@ def worker_process_cleanup(**kwargs):
     util.cleanup_ucs_handler(handlers)
     print "Global handlers are cleared"
 
+
 # TODO: Enhance cleanup with more stable methods
 worker_process_shutdown.connect(worker_process_cleanup)
+
 
 @app.task
 def runUcsJob(funcName, taskId, *args, **kwargs):
@@ -37,6 +36,7 @@ def runUcsJob(funcName, taskId, *args, **kwargs):
     kwargs["handlers"] = handlers
     result = getattr(Ucs, funcName)(*args, **kwargs)
     sendHttpRequest.delay(taskId, result)
+
 
 @app.task
 def sendHttpRequest(taskId, data):
@@ -51,7 +51,7 @@ def sendHttpRequest(taskId, data):
     res = requests.request(
         "POST", url, json=data, headers=headers, params=query_string
     )
-    if res.status_code != 201:
+    if res.status_code != 200:
         print "Error to post data back to RackHD via API: {}".format(callbackUrl)
         print res.content
 

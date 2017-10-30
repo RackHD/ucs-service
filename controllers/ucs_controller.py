@@ -1,4 +1,5 @@
 # Copyright 2017, Dell EMC, Inc.
+
 from flask import request, current_app
 from service.ucs import Ucs
 from util.decorator import response_wrapper, status_handler
@@ -29,7 +30,7 @@ def getCatalog(identifier=None):
 @response_wrapper
 @status_handler(default_status=200)
 def getPollers(identifier, classIds):
-    handlers = current_app.config.get("handlers")  or {}
+    handlers = current_app.config.get("handlers")
     return Ucs.getPollers(
         request.headers,
         identifier,

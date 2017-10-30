@@ -5,23 +5,15 @@ import connexion
 from flask import current_app
 from util import util
 
-defaults = {
-    "address": "0.0.0.0",
-    "port": 7080,
-    "httpsEnabled": False,
-    "certFile": None,
-    "keyFile": None,
-    "debug": False
-}
-
-config = util.load_config(defaults)
+config = util.load_config()
 context = util.setup_ssl_context(config)
 app = connexion.App(__name__, specification_dir='./swagger/')
 app.add_api('swagger.yaml', arguments={'title': 'UCS Service'})
 
-# Global handlers are used to save UCSM login/logout actions
+# Global handlers in current_app.config are used to minimize UCSM login/logout operations
 with app.app.app_context():
     current_app.config['handlers'] = {}
+
 
 @atexit.register
 def cleanup():
@@ -32,6 +24,7 @@ def cleanup():
         handlers = current_app.config.get("handlers")
         util.cleanup_ucs_handler(handlers)
     print "Global handlers are cleared"
+
 
 if __name__ == '__main__':
     app.run(

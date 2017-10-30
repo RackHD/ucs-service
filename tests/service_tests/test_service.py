@@ -24,6 +24,7 @@ class test_default_service(unittest.TestCase):
 
     class mockUcsHandle:
         result = True
+
         def __init__(self):
             pass
 
