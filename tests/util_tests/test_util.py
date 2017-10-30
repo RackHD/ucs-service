@@ -26,6 +26,7 @@ MOCK_SSL_CONFIG = {
     "keyFile": "key_file"
 }
 
+
 class test_default_tasks(unittest.TestCase):
 
     def setUp(self):
@@ -77,5 +78,3 @@ class test_default_tasks(unittest.TestCase):
         self.assertEqual(result, None)
         result = util.setup_ssl_context(MOCK_SSL_CONFIG)
         self.assertEqual(result, (MOCK_SSL_CONFIG['certFile'], MOCK_SSL_CONFIG['keyFile']))
-
-

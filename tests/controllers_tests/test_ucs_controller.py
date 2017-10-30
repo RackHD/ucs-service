@@ -43,12 +43,11 @@ class test_default_controller(unittest.TestCase):
         print "running controller tests setup"
 
     def tearDown(self):
-        print "running controller tests teardown"
+        print "running controller tests tear down"
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
     def testLoginSuccess(self, mock_ucs, mock_request):
-        print "running test"
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.cookie = EXPECTED_COOKIE
         mock_request.headers = MOCK_HEADER
@@ -60,7 +59,6 @@ class test_default_controller(unittest.TestCase):
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
     def testLoginFailure(self, mock_ucs, mock_request):
-        print "running test"
         mock_ucs.return_value.login.return_value = False
         mock_ucs.return_value.cookie = EXPECTED_COOKIE
         mock_request.headers = MOCK_HEADER
@@ -138,17 +136,9 @@ class test_default_controller(unittest.TestCase):
 
     class mockCurrentApp:
         config = None
+
         def __init__(self, data):
             self.config = {"handlers": data}
-
-    class mockUcsHandle:
-        #def __init__(self):
-        #    pass
-        def logout(self):
-            return False
-
-        def login(self):
-            return True
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
@@ -649,4 +639,3 @@ class test_default_controller(unittest.TestCase):
         mock_request.headers = MOCK_HEADER
         result = controler.getPollers(identifier=MOCK_ID, classIds=MOCK_CLASS_IDS)
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
-

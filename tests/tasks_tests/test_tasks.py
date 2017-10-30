@@ -9,6 +9,7 @@ MOCK_POLLER_DATA = {"data": "mock_poller_data"}
 MOCK_ARGS = ("arg1", "arg2")
 MOCK_KWARGS = {"arg3": "arg3"}
 
+
 class test_default_tasks(unittest.TestCase):
 
     def setUp(self):
@@ -16,6 +17,7 @@ class test_default_tasks(unittest.TestCase):
 
     def tearDown(self):
         print "tasks tests running tear down"
+
 
     class mockRequestResponse:
         def __init__(self):
@@ -32,7 +34,7 @@ class test_default_tasks(unittest.TestCase):
         mock_request.assert_called_once_with(
             "POST",
             tasks.callbackUrl,
-            data=MOCK_POLLER_DATA,
+            json=MOCK_POLLER_DATA,
             headers={'content-type': 'application/json'},
             params={"taskId": MOCK_TASK_ID}
         )
@@ -45,13 +47,10 @@ class test_default_tasks(unittest.TestCase):
         mock_ucs_get_pollers.return_value = MOCK_POLLER_DATA
         mock_send_http_request.delay.return_value = "test"
         tasks.runUcsJob("getPollers", MOCK_TASK_ID, *MOCK_ARGS, **MOCK_KWARGS)
-        kwargs_with_handler = {"handlers":{}}
+        kwargs_with_handler = {"handlers": {}}
         kwargs_with_handler.update(MOCK_KWARGS)
         mock_ucs_get_pollers.assert_called_once_with(*MOCK_ARGS, **kwargs_with_handler)
         mock_send_http_request.delay.assert_called_once_with(
             MOCK_TASK_ID,
             MOCK_POLLER_DATA
         )
-
-
-

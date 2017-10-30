@@ -23,7 +23,7 @@ class test_default_async_controller(unittest.TestCase):
         print "running async controller tests setup"
 
     def tearDown(self):
-        print "running async controller tests teardown"
+        print "running async controller tests tear down"
 
     @mock.patch('controllers.ucs_async_controller.request')
     @mock.patch('controllers.ucs_async_controller.tasks.runUcsJob')

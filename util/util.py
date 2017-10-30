@@ -13,6 +13,7 @@ def cleanup_ucs_handler(handler_obj):
     for handler in handler_obj.values():
         handler["ucs-handle"].logout()
 
+
 def serialize_ucs_http_headers(headers):
     """
     Serialize ucs http headers
@@ -22,6 +23,7 @@ def serialize_ucs_http_headers(headers):
         "ucs-user": headers.get("ucs-user"),
         "ucs-password": headers.get("ucs-password")
     }
+
 
 def load_config(defaults):
     """
@@ -35,6 +37,7 @@ def load_config(defaults):
         print "Error loading config.json, using defaults!"
         config = defaults
     return config
+
 
 def setup_ssl_context(config):
     """
