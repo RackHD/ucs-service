@@ -1,38 +1,29 @@
 #  Copyright 2017, Dell EMC, Inc.
 import re
+import time
+from util import util
 from ucsmsdk.ucsexception import UcsException
 from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
 from ucsmsdk.mometa.ls.LsPower import LsPower
 from ucsmsdk.ucshandle import UcsHandle
 
 
-def singleton(class_):
-    """single pattern decorator"""
-    instances = {}
-
-    def instance_wrapper(*args, **kwargs):
-        if class_ not in instances:
-            instances[class_] = class_(*args, **kwargs)
-        return instances[class_]
-
-    return instance_wrapper
+SESSION_DURATION = util.load_config().get("session", 60)
 
 
-@singleton
 class Ucs:
-    """Representation of a UCS"""
+    """Representation of UCS methods collection"""
 
-    def __init__(self):
-        pass
-
-    def login_get(self, headers):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def login_get(headers):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         handle = UcsHandle(*authInfo, secure=False)
         if handle.login():
             return handle.cookie
 
-    def systemGetAll(self, headers):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def systemGetAll(headers):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         handle = UcsHandle(*authInfo, secure=False)
         if handle.login():
             elements = [{
@@ -74,8 +65,9 @@ class Ucs:
             handle.logout()
             return {"error": "Forbidden"}
 
-    def getRackmount(self, headers):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def getRackmount(headers):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         data = []
         handle = UcsHandle(*authInfo, secure=False)
         if handle.login():
@@ -112,8 +104,9 @@ class Ucs:
             handle.logout()
             return {"error": "Forbidden"}
 
-    def getCatalog(self, headers, identifier=None):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def getCatalog(headers, identifier=None):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         data = []
 
         handle = UcsHandle(*authInfo, secure=False)
@@ -123,7 +116,7 @@ class Ucs:
                 elements.append(handle.query_dn(dn=identifier))
                 for element in elements:
                     if (element):
-                        data.append(self._reduce(element.__dict__))
+                        data.append(Ucs._reduce(element.__dict__))
                 handle.logout()
                 return {"data": data}
             except UcsException as e:
@@ -133,43 +126,37 @@ class Ucs:
             handle.logout()
             return {"error": "Forbidden"}
 
-    def getPollers(self, headers, identifier, classIds):
+    @staticmethod
+    def getPollers(headers, identifier, classIds, handlers=None):
         """
             Get node pollers data by given class ids
             @param identifier: dn string of a node
             @param classIds: a list of class ids to be retrieved
         """
-        authInfo = self._getUcsAuthInfo(headers)
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            try:
-                handle.set_mode_threading()
-                result = {}
-                excludeBade = ''
-                pattern = re.compile('^sys/chassis-\d{1,3}$')
-                if pattern.match(identifier):
-                    excludeBade = ' and not (dn, ".*blade.*", type="re")'
-                for class_id in classIds:
-                    filter_str = '(dn, "{}.*", type="re"){}'.format(
-                        identifier, excludeBade)
-                    items = handle.query_classid(
-                        class_id=class_id, filter_str=filter_str)
-                    colletion = []
-                    for item in items:
-                        colletion.append(self._reduce(item.__dict__))
-                    result[class_id] = colletion
-                handle.unset_mode_threading()
-                handle.logout()
-                return {"data": result}
-            except UcsException as e:
-                handle.logout()
-                raise e
-        else:
-            handle.logout()
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
+        try:
+            result = {}
+            excludeBade = ''
+            pattern = re.compile('^sys/chassis-\d{1,3}$')
+            if pattern.match(identifier):
+                excludeBade = ' and not (dn, ".*blade.*", type="re")'
+            for class_id in classIds:
+                filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
+                items = handle.query_classid(class_id=class_id, filter_str=filter_str)
+                colletion = []
+                for item in items:
+                    colletion.append(Ucs._reduce(item.__dict__))
+                result[class_id] = colletion
+            return {"data": result}
+        except UcsException as e:
+            handle.logout()
+            raise e
 
-    def getChassis(self, headers):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def getChassis(headers):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         data = []
         handle = UcsHandle(*authInfo, secure=False)
         if handle.login():
@@ -224,8 +211,9 @@ class Ucs:
         handle.logout()
         return {"data": data}
 
-    def getServiceProfile(self, headers):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def getServiceProfile(headers):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         handle = UcsHandle(*authInfo, secure=False)
         if not handle.login():
             handle.logout()
@@ -275,12 +263,13 @@ class Ucs:
         handle.logout()
         return {"data": finalObjs}
 
-    def powerStatus(self, headers, identifier=None):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def powerStatus(headers, identifier=None):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         handle = UcsHandle(*authInfo, secure=False)
         if handle.login():
             try:
-                state = self._powerStatus(identifier, handle)
+                state = Ucs._powerStatus(identifier, handle)
             except UcsException as e:
                 handle.logout()
                 raise e
@@ -291,29 +280,31 @@ class Ucs:
             handle.logout()
             return {"error": "Forbidden"}
 
-    def powerMgmt(self, headers, identifier=None, action=None, physical=False):
-        authInfo = self._getUcsAuthInfo(headers)
+    @staticmethod
+    def powerMgmt(headers, identifier=None, action=None, physical=False):
+        authInfo = Ucs._getUcsAuthInfo(headers)
         handle = UcsHandle(*authInfo, secure=False)
         if handle.login():
             try:
                 if physical:
-                    data = self._physical_power_set(
+                    data = Ucs._physical_power_set(
                         handle=handle, dn=identifier, state=action)
                 else:
-                    data = self._service_profile_power_set(
+                    data = Ucs._service_profile_power_set(
                         handle=handle, dn=identifier, state=action)
             except UcsException as e:
                 handle.logout()
                 raise e
             else:
                 handle.logout()
-                data = self._reduce(data.__dict__)
+                data = Ucs._reduce(data.__dict__)
             return {"data": data}
         else:
             handle.logout()
             return {"error": "Forbidden"}
 
-    def _service_profile_power_set(self, handle, dn=None, state=None):
+    @staticmethod
+    def _service_profile_power_set(handle, dn=None, state=None):
         blade_mo = handle.query_dn(dn)
         if blade_mo is None:
             raise UcsException(
@@ -356,7 +347,8 @@ class Ucs:
         handle.commit()
         return data
 
-    def _physical_power_set(self, handle, dn=None, state=None):
+    @staticmethod
+    def _physical_power_set(handle, dn=None, state=None):
         ADMIN_POWER_ADMIN_DOWN = "admin-down"
         ADMIN_POWER_ADMIN_UP = "admin-up"
         ADMIN_POWER_BMC_RESET_IMMEDIATE = "bmc-reset-immediate"
@@ -376,11 +368,11 @@ class Ucs:
             raise UcsException(
                 "physical_power_set: Failed to set element power",
                 "sever %s does not exist" % (dn))
-        elif (mo._class_id == "LsServer" and mo.assigned_to_dn is not None
-              and mo.assigned_to_dn != ""):
+        elif (mo._class_id == "LsServer" and mo.assigned_to_dn is not None and
+              mo.assigned_to_dn != ""):
             server_mo = handle.query_dn(mo.assigned_to_dn)
-        elif (mo._class_id == "ComputeRackUnit"
-              or mo._class_id == "compuetBlade"):
+        elif (mo._class_id == "ComputeRackUnit" or
+              mo._class_id == "compuetBlade"):
             server_mo = mo
         else:
             raise UcsException(
@@ -429,7 +421,8 @@ class Ucs:
         handle.commit()
         return server_mo
 
-    def _powerStatus(self, dn, handle):
+    @staticmethod
+    def _powerStatus(dn, handle):
         blade_mo = handle.query_dn(dn)
         if blade_mo is None:
             raise UcsException(
@@ -449,16 +442,50 @@ class Ucs:
         data = powerLs.state
         return data
 
-    def _getUcsAuthInfo(self, headers):
+    @staticmethod
+    def _getUcsAuthInfo(headers):
         host = headers.get('ucs-host')
         user = headers.get('ucs-user')
         password = headers.get('ucs-password')
 
         return (host, user, password)
 
-    def _reduce(self, object):
+    @staticmethod
+    def _reduce(object):
         # remove the private propeties of an obj
         for property in object.keys():
             if (property[0] == "_"):
                 del object[property]
         return object
+
+    @staticmethod
+    def _getHandler(headers, handlers):
+        authInfo = Ucs._getUcsAuthInfo(headers)
+        host, user, password = authInfo
+        timestamp = time.time()
+        handle_obj = handlers.get(host, None)
+        ucs_handle = handle_obj and handle_obj.get('ucs-handle', None)
+        is_auth_valid = ucs_handle \
+            and handle_obj.get('ucs-user') == user \
+            and handle_obj.get('ucs-password') == password \
+            and (timestamp - handle_obj['timestamp']) < SESSION_DURATION
+        if is_auth_valid:
+            handle_obj['timestamp'] = timestamp
+        else:
+            if ucs_handle:
+                # logout existing handler if it is invalid
+                ucs_handle.logout()
+            ucs_handle = UcsHandle(*authInfo, secure=False)
+            if ucs_handle.login():
+                ucs_handle_obj = {
+                    'ucs-user': user,
+                    'ucs-password': password,
+                    'ucs-host': host,
+                    'ucs-handle': ucs_handle,
+                    'timestamp': timestamp
+                }
+                handlers[host] = ucs_handle_obj
+            else:
+                ucs_handle.logout()
+                return None
+        return ucs_handle

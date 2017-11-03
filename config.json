@@ -4,5 +4,9 @@
     "httpsEnabled": true,
     "certFile": null,
     "keyFile": null,
-    "debug": false
+    "debug": false,
+    "callbackUrl": "http://172.31.128.1:9988/api/current/ucsCallback",
+    "concurrency": 2,
+    "amqp": "amqp://localhost",
+    "session": 60
 }
