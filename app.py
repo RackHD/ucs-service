@@ -23,7 +23,7 @@ def cleanup():
     with app.app.app_context():
         handlers = current_app.config.get("handlers")
         util.cleanup_ucs_handler(handlers)
-    print "Global handlers are cleared"
+    print "Global handlers for connexion/flask app are cleared"
 
 
 if __name__ == '__main__':

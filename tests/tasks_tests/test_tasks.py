@@ -26,15 +26,14 @@ class test_default_tasks(unittest.TestCase):
 
     @mock.patch('tasks.requests.request')
     @mock.patch('tasks.Celery')
-    @mock.patch('tasks.Ucs.getPollers')
-    def testSentHttpRequest(self, mock_ucs_get_pollers, mock_celery, mock_request):
+    def testSentHttpRequest(self, mock_celery, mock_request):
         """Test sendHttpRequest task"""
         mock_request.return_value = self.mockRequestResponse()
-        tasks.sendHttpRequest(MOCK_TASK_ID, MOCK_POLLER_DATA)
+        tasks.sendHttpRequest(MOCK_TASK_ID, (MOCK_POLLER_DATA["data"], 200))
         mock_request.assert_called_once_with(
             "POST",
             tasks.callbackUrl,
-            json=MOCK_POLLER_DATA,
+            json={"body": MOCK_POLLER_DATA["data"]},
             headers={'content-type': 'application/json'},
             params={"taskId": MOCK_TASK_ID}
         )
@@ -52,5 +51,5 @@ class test_default_tasks(unittest.TestCase):
         mock_ucs_get_pollers.assert_called_once_with(*MOCK_ARGS, **kwargs_with_handler)
         mock_send_http_request.delay.assert_called_once_with(
             MOCK_TASK_ID,
-            MOCK_POLLER_DATA
+            (MOCK_POLLER_DATA["data"], 200)
         )

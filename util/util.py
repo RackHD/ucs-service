@@ -1,8 +1,9 @@
 # Copyright 2017, Dell EMC, Inc.
 
+import os
 import json
 
-CONFIG_FILE = 'config.json'
+CONFIG_FILE = "/".join((os.path.split(os.path.realpath(__file__))[0]).split('/')[:-1]) + '/config.json'
 
 
 def cleanup_ucs_handler(handler_obj):

@@ -1,12 +1,14 @@
 #  Copyright 2017, Dell EMC, Inc.
 import re
 import time
+from util import util
 from ucsmsdk.ucsexception import UcsException
 from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
 from ucsmsdk.mometa.ls.LsPower import LsPower
 from ucsmsdk.ucshandle import UcsHandle
 
-SESSION_DURATION = 60
+
+SESSION_DURATION = util.load_config().get("session", 60)
 
 
 class Ucs:
