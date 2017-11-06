@@ -8,11 +8,11 @@ from util.util import serialize_ucs_http_headers
 
 @response_wrapper
 @status_handler(default_status=202)
-def getPollersAsync(identifier, classIds, taskId):
+def getPollersAsync(identifier, classIds, callbackId):
     """Get pollers asynchronously"""
     tasks.runUcsJob.delay(
         "getPollers",
-        taskId,
+        callbackId,
         serialize_ucs_http_headers(request.headers),
         identifier,
         classIds
