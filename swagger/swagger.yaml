@@ -190,9 +190,9 @@ paths:
         description: "UCS manager user password"
         required: true
         type: "string"
-      - name: "taskId"
+      - name: "callbackId"
         in: "query"
-        description: "UCS manager user password"
+        description: "Callback API identity"
         required: true
         type: "string"
       - name: "identifier"

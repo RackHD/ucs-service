@@ -34,23 +34,23 @@ def _runUcsJobCore(funcName, *args, **kwargs):
 
 
 @app.task
-def runUcsJob(funcName, taskId, *args, **kwargs):
+def runUcsJob(funcName, callbackId, *args, **kwargs):
     """
     Run Ucs service job with given job name and arguments,
     and initiate RackHD callback task with returned job result
     """
     kwargs["handlers"] = handlers
     result = _runUcsJobCore(funcName, *args, **kwargs)
-    sendHttpRequest.delay(taskId, result)
+    sendHttpRequest.delay(callbackId, result)
 
 
 @app.task
-def sendHttpRequest(taskId, data):
+def sendHttpRequest(callbackId, data):
     """
     Post data to RackHD via callbackUrl
     """
     url = callbackUrl
-    query_string = {"taskId": taskId}
+    query_string = {"callbackId": callbackId}
     headers = {'content-type': "application/json"}
     res = requests.request(
         "POST", url, json={"body": data[0]}, headers=headers, params=query_string
