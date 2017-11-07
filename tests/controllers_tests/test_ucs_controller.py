@@ -622,7 +622,6 @@ class test_default_controller(unittest.TestCase):
             self.assertEqual(MOCK_CLASS_ID_DATA[i], result[0][mocked_class_id][0]['data'],
                              'CPU data in result does not equal "{}"'.format(MOCK_CLASS_ID_DATA[i]))
         mock_getHandler.return_value.query_classid.assert_has_calls(calls)
-        mock_ucs.return_value.query_classid.assert_has_calls(calls)
 
         
     @mock.patch('controllers.ucs_controller.current_app')
