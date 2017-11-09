@@ -1,41 +1,36 @@
 # Copyright 2017, Dell EMC, Inc.
 
+import atexit
 import connexion
-import json
-import ThreadingTimer
+from flask import current_app
+from util import util
+
+config = util.load_config()
+context = util.setup_ssl_context(config)
+app = connexion.App(__name__, specification_dir='./swagger/')
+app.add_api('swagger.yaml', arguments={'title': 'UCS Service'})
+
+# Global handlers in current_app.config are used to minimize UCSM login/logout operations
+with app.app.app_context():
+    current_app.config['handlers'] = {}
+
+
+@atexit.register
+def cleanup():
+    """
+    App clean up
+    """
+    with app.app.app_context():
+        handlers = current_app.config.get("handlers")
+        util.cleanup_ucs_handler(handlers)
+    print "Global handlers for connexion/flask app are cleared"
+
 
 if __name__ == '__main__':
-
-    defaults = {
-        "address": "0.0.0.0",
-        "port": 7080,
-        "httpsEnabled": False,
-        "certFile": None,
-        "keyFile": None,
-        "debug": False,
-    }
-
-    # load config info
-    try:
-        with open('config.json') as config_data:
-            config = json.load(config_data)
-    except:
-        print("Error loading config.json, using defaults!")
-        config = defaults
-
-    # set up ssl_context
-    if 'httpsEnabled' not in config or not config['httpsEnabled']:
-        context = None
-    elif 'certFile' not in config or config['certFile'] is None or \
-         'keyFile' not in config or config['keyFile'] is None:
-        context = 'adhoc'
-    else:
-        context = (config['certFile'], config['keyFile'])
-
-    app = connexion.App(__name__, specification_dir='./swagger/')
-    app.add_api('swagger.yaml', arguments={'title': 'UCS Service'})
-    ThreadingTimer.ThreadingTimer(app)
-    app.run(host=config['address'],
-            port=config['port'],
-            debug=config['debug'],
-            ssl_context=context)
+    app.run(
+        host=config['address'],
+        port=config['port'],
+        debug=config['debug'],
+        ssl_context=context
+    )
+    

@@ -1,467 +1,63 @@
 # Copyright 2017, Dell EMC, Inc.
-import re
-import time
-from ucsmsdk.ucshandle import UcsHandle
-from ucsmsdk.ucsexception import UcsException
+
 from flask import request, current_app
-from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
-from ucsmsdk.mometa.ls.LsPower import LsPower
+from service.ucs import Ucs
+from util.decorator import response_wrapper, status_handler
+
 
 def login_get():
-    authInfo = _getUcsAuthInfo((request.headers))
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        return handle.cookie
+    return Ucs.login_get(request.headers)
 
 
-def http_body_factory(function):
-    def wrapper(*args, **kwargs):
-        resp = function(*args, **kwargs)
-        if (len(resp) == 3):
-            http_res = {
-                "message": resp[0],
-                "status": resp[2],
-                "stack": resp[1]
-            }
-            return http_res, resp[2]
-        else:
-            return resp
-    return wrapper
-
-
-@http_body_factory
+@response_wrapper
+@status_handler(default_status=200)
 def systemGetAll():
-    authInfo = _getUcsAuthInfo((request.headers))
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        elements = [{"ciscoXmlName": "EquipmentChassis", "humanReadableName": "Chassis"},
-                    {"ciscoXmlName": "NetworkElement", "humanReadableName": "Fabric Interconnects"},
-                    {"ciscoXmlName": "EquipmentFex", "humanReadableName": "FEX"},
-                    {"ciscoXmlName": "computeRackUnit", "humanReadableName": "Servers"}]
-        finalObjs = {}
-        for x in elements:
-            units = []
-            try:
-                components = handle.query_children(in_dn="sys", class_id=x["ciscoXmlName"])
-            except UcsException as e:
-                handle.logout()
-                return 'Internal Server Error', e.error_descr, 500
-            else:
-                if(type(components) == list):
-                    for y in components:
-                        subElement = {"relative_path": "/" + (vars(y))["dn"]}
-                        units.append(subElement)
-                    finalObjs[x["humanReadableName"]] = units
-                else:
-                    handle.logout()
-                    return "Couldn't fetch " + x["ciscoXmlName"], "", 500
-        handle.logout()
-        return finalObjs
-    else:
-        handle.logout()
-        return 'Forbidden', "", 403
+    return Ucs.systemGetAll(request.headers)
 
 
-@http_body_factory
+@response_wrapper
+@status_handler(default_status=200)
 def getRackmount():
-    authInfo = _getUcsAuthInfo((request.headers))
-    data = []
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        try:
-            computeRackUnit = handle.query_children(in_dn="sys", class_id="computeRackUnit")
-        except UcsException as e:
-            handle.logout()
-            return 'Internal Server Error', e.error_descr, 500
-        else:
-            if (type(computeRackUnit) == list):
-                for x in computeRackUnit:
-                    server = {}
-                    server["name"] = x.rn
-                    server["path"] = x.dn
-                    server["macs"] = []
-                    try:
-                        macs = handle.query_children(in_dn=x.dn, class_id='PciEquipSlot')
-                    except UcsException as e:
-                        handle.logout()
-                        return 'Internal Server Error', e.error_descr, 500
-                    for y in macs:
-                        server["macs"].append(y.mac_left)
-                        server["macs"].append(y.mac_right)
-                    data.append(server)
-                handle.logout()
-                return data
-            else:
-                handle.logout()
-                return "Couldn't fetch computeRackUnits:", "", 500
-
-    else:
-        handle.logout()
-        return 'Forbidden', "", 403
+    return Ucs.getRackmount(request.headers)
 
 
-@http_body_factory
+@response_wrapper
+@status_handler(default_status=200)
 def getCatalog(identifier=None):
-    authInfo = _getUcsAuthInfo((request.headers))
-    data = []
+    return Ucs.getCatalog(request.headers, identifier)
 
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        try:
-            elements = (handle.query_children(in_dn=identifier))
-            elements.append(handle.query_dn(dn=identifier))
-            for element in elements:
-                if (element):
-                    data.append(reduce(element.__dict__))
-            handle.logout()
-            return data
-        except UcsException as e:
-            handle.logout()
-            return 'Internal Server Error', e.error_descr, 500
-    else:
-        handle.logout()
-        return 'Forbidden', "", 403
 
-@http_body_factory
+@response_wrapper
+@status_handler(default_status=200)
 def getPollers(identifier, classIds):
-    """
-        Get node pollers data by given class ids
-        @param identifier: dn string of a node
-        @param classIds: a list of class ids to be retrieved
-    """
-    handle = _getPollerHandler(request)
-    if not handle:
-        return 'Forbidden', '', 403
-    try:
-        result = {}
-        excludeBade = ''
-        pattern = re.compile('^sys/chassis-\d{1,3}$')
-        if pattern.match(identifier):
-            excludeBade = ' and not (dn, ".*blade.*", type="re")'
-        for class_id in classIds:
-            filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
-            items = handle.query_classid(class_id=class_id, filter_str=filter_str)
-            colletion = []
-            for item in items:
-                colletion.append(reduce(item.__dict__))
-            result[class_id] = colletion
-        return result
-    except UcsException as e:
-        handle.logout()
-        return 'Internal Server Error', e.error_descr, 500
+    handlers = current_app.config.get("handlers")
+    return Ucs.getPollers(
+        request.headers,
+        identifier,
+        classIds,
+        handlers=handlers
+    )
 
-@http_body_factory
+
+@response_wrapper
+@status_handler(default_status=200)
 def getChassis():
-    authInfo = _getUcsAuthInfo((request.headers))
-    data = []
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        try:
-            elememts = handle.query_children(in_dn="sys", class_id="EquipmentChassis")
-        except UcsException as e:
-            return 'Internal Server Error', e.error_descr, 500
-        else:
-            if (type(elememts) == list):
-                for element in elememts:
-                    chassis = {}
-                    identifier = element.dn
-                    obj = handle.query_dn(dn=identifier)
-                    chassis["name"] = obj.rn
-                    chassis["path"] = obj.dn
-                    chassis["members"] = []
-                    try:
-                        blades = handle.query_children(in_dn=identifier, class_id='ComputeBlade')
-                    except UcsException as e:
-                        handle.logout()
-                        return 'Internal Server Error', e.error_descr, 500
-                    else:
-                        if (type(blades) == list):
-                            for x in blades:
-                                server = {}
-                                server["name"] = x.rn
-                                server["path"] = x.dn
-                                server["macs"] = []
-                                try:
-                                    adptares = handle.query_children(in_dn=x.dn, class_id='AdaptorUnit')
-                                except UcsException as e:
-                                    handle.logout()
-                                    return 'Internal Server Error', e.error_descr, 500
-                                else:
-                                    for x in adptares:
-                                        server["macs"].append(x.base_mac)
-                                    chassis["members"].append(server)
-                            data.append(chassis)
-                        else:
-                            handle.logout()
-                            return "Couldn't fetch ComputeBlade", "", 500
-            else:
-                handle.logout()
-                return "Couldn't fetch EquipmentChassis", "", 500
-    else:
-        handle.logout()
-        return 'Forbidden', "", 403
-    handle.logout()
-    return data
+    return Ucs.getChassis(request.headers)
 
 
-@http_body_factory
+@response_wrapper
+@status_handler(default_status=200)
 def getServiceProfile():
-    authInfo = _getUcsAuthInfo((request.headers))
-    handle = UcsHandle(*authInfo, secure=False)
-    if not handle.login():
-        handle.logout()
-        return 'Forbidden', "", 403
-    rootElements = [{"ciscoXmlName": "orgOrg", "humanReadableName": "ServiceProfile"}]
-    finalObjs = {}
-    for x in rootElements:
-        subElement = {}
-        try:
-            components = handle.query_classid(x["ciscoXmlName"])
-        except UcsException as e:
-            handle.logout()
-            return 'Internal Server Error', e.error_descr, 500
-        else:
-            if not (type(components) == list):
-                handle.logout()
-                return "Couldn't fetch " + x["humanReadableName"], "", 500
-
-            for y in components:
-                subElement["org"] = y.level
-                subElement["members"] = []
-                try:
-                    lsList = handle.query_children(in_dn="org-root", class_id="lsServer")
-                except UcsException as e:
-                    handle.logout()
-                    return 'Internal Server Error', e.error_descr, 500
-                else:
-                    if not (type(lsList) == list):
-                        handle.logout()
-                        return "Couldn't fetch Logical Servers", "", 500
-                    for item in lsList:
-                        logicalServer = {}
-                        identifier = item.dn
-                        obj = handle.query_dn(dn=identifier)
-                        logicalServer["name"] = obj.rn
-                        logicalServer["path"] = obj.dn
-                        logicalServer["associatedServer"] = obj.pn_dn
-                        logicalServer["assoc_state"] = obj.assoc_state
-                        subElement["members"].append(logicalServer)
-            finalObjs[x["humanReadableName"]] = subElement
-    handle.logout()
-    return finalObjs
+    return Ucs.getServiceProfile(request.headers)
 
 
-@http_body_factory
+@response_wrapper
+@status_handler(default_status=200)
 def powerStatus(identifier=None):
-    authInfo = _getUcsAuthInfo((request.headers))
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        try:
-            state = _powerStatus(identifier, handle)
-        except UcsException as e:
-            handle.logout()
-            return 'Internal Server Error', e.error_descr, 500
-        else:
-            handle.logout()
-            return {"serverState": state}
-    else:
-        handle.logout()
-        return 'Forbidden', "", 403
+    return Ucs.powerStatus(request.headers, identifier)
 
 
-@http_body_factory
+@response_wrapper
+@status_handler(default_status=200)
 def powerMgmt(identifier=None, action=None, physical=False):
-    authInfo = _getUcsAuthInfo((request.headers))
-    handle = UcsHandle(*authInfo, secure=False)
-    if handle.login():
-        try:
-            if physical:
-                data = _physical_power_set(handle=handle, dn=identifier, state=action)
-            else:
-                data = _service_profile_power_set(handle=handle, dn=identifier, state=action)
-        except UcsException as e:
-            handle.logout()
-            return 'Internal Server Error', e.error_descr, 500
-        else:
-            handle.logout()
-            data = reduce(data.__dict__)
-        return data
-    else:
-        handle.logout()
-        return 'Forbidden', "", 403
-
-
-def _service_profile_power_set(handle, dn=None, state=None):
-    blade_mo = handle.query_dn(dn)
-    if blade_mo is None:
-        raise UcsException(
-            "service_profile_power_set: Failed to set element power",
-            "sever %s does not exist" % (dn))
-    elif blade_mo._class_id == "LsServer":
-        sp_mo = blade_mo
-    elif blade_mo.assigned_to_dn is None or blade_mo.assigned_to_dn == "":
-        raise UcsException(
-            "service_profile_power_set: Failed to set element power",
-            "sever %s is not associated to a service profile" % (dn))
-    else:
-        sp_mo = handle.query_dn(blade_mo.assigned_to_dn)
-    if state == "off":
-        state = LsPowerConsts.STATE_DOWN
-    elif state == "on":
-        state = LsPowerConsts.STATE_UP
-    elif state == "cycle-immediate":
-        state = LsPowerConsts.STATE_CYCLE_IMMEDIATE
-    elif state == "cycle-wait":
-        state = LsPowerConsts.STATE_CYCLE_WAIT
-    elif state == "bmc-reset-immediate":
-        state = LsPowerConsts.STATE_BMC_RESET_IMMEDIATE
-    elif state == "ipmi-reset":
-        state = LsPowerConsts.STATE_IPMI_RESET
-    elif state == "hard-reset-immediate":
-        state = LsPowerConsts.STATE_HARD_RESET_IMMEDIATE
-    elif state == "soft-shut-down":
-        state = LsPowerConsts.STATE_SOFT_SHUT_DOWN
-    else:
-        raise UcsException(
-            "server_power_set: Failed to set server power",
-            "action '{0}' is not valid. Choose one of the following: "
-            "'on', 'off', 'cycle-wait','cycle-immediate', 'bmc-reset-immediate',"
-            " 'ipmi-reset', 'hard-reset-immediate', 'soft-shut-down' ".format(state))
-    data = LsPower(
-        parent_mo_or_dn=sp_mo,
-        state=state)
-    handle.set_mo(sp_mo)
-    handle.commit()
-    return data
-
-
-def _physical_power_set(handle, dn=None, state=None):
-    ADMIN_POWER_ADMIN_DOWN = "admin-down"
-    ADMIN_POWER_ADMIN_UP = "admin-up"
-    ADMIN_POWER_BMC_RESET_IMMEDIATE = "bmc-reset-immediate"
-    ADMIN_POWER_BMC_RESET_WAIT = "bmc-reset-wait"
-    ADMIN_POWER_CMOS_RESET_IMMEDIATE = "cmos-reset-immediate"
-    ADMIN_POWER_CYCLE_IMMEDIATE = "cycle-immediate"
-    ADMIN_POWER_CYCLE_WAIT = "cycle-wait"
-    ADMIN_POWER_DIAGNOSTIC_INTERRUPT = "diagnostic-interrupt"
-    ADMIN_POWER_HARD_RESET_IMMEDIATE = "hard-reset-immediate"
-    ADMIN_POWER_HARD_RESET_WAIT = "hard-reset-wait"
-    ADMIN_POWER_IPMI_RESET = "ipmi-reset"
-    ADMIN_POWER_KVM_RESET = "kvm-reset"
-    ADMIN_POWER_POLICY = "policy"
-
-    mo = handle.query_dn(dn)
-    if mo is None:
-        raise UcsException(
-            "physical_power_set: Failed to set element power",
-            "sever %s does not exist" % (dn))
-    elif mo._class_id == "LsServer" and mo.assigned_to_dn is not None and mo.assigned_to_dn != "":
-        server_mo = handle.query_dn(mo.assigned_to_dn)
-    elif mo._class_id == "ComputeRackUnit" or mo._class_id == "compuetBlade":
-        server_mo = mo
-    else:
-        raise UcsException(
-            "physical_power_set: Failed to set element power",
-            "sever %s has an unknown class_id %s" % (dn, mo._class_id))
-    if state == "off":
-        state = ADMIN_POWER_ADMIN_DOWN
-    elif state == "on":
-        state = ADMIN_POWER_ADMIN_UP
-    elif state == "cycle-immediate":
-        state = ADMIN_POWER_CYCLE_IMMEDIATE
-    elif state == "cycle-wait":
-        state = ADMIN_POWER_CYCLE_WAIT
-    elif state == "bmc-reset-immediate":
-        state = ADMIN_POWER_BMC_RESET_IMMEDIATE
-    elif state == "bmc-reset-wait":
-        state = ADMIN_POWER_BMC_RESET_WAIT
-    elif state == "hard-reset-immediate":
-        state = ADMIN_POWER_HARD_RESET_IMMEDIATE
-    elif state == "hard-reset-wait":
-        state = ADMIN_POWER_HARD_RESET_WAIT
-    elif state == "ipmi-reset":
-        state = ADMIN_POWER_IPMI_RESET
-    elif state == "cmos-reset-immediate":
-        state = ADMIN_POWER_CMOS_RESET_IMMEDIATE
-    elif state == "diagnostic-interrupt":
-        state = ADMIN_POWER_DIAGNOSTIC_INTERRUPT
-    elif state == "kvm-reset":
-        state = ADMIN_POWER_KVM_RESET
-    elif state == "policy":
-        state = ADMIN_POWER_POLICY
-    else:
-        raise UcsException(
-            "_physical_power_set: Failed to set server power",
-            "action '{0}' is not valid. physical power control supports states: "
-            "'off', 'on', 'cycle-wait', 'cycle-immediate', bmc-reset-immediate, "
-            "'bmc-reset-wait', 'hard-reset-immediate', 'hard-reset-wait', 'ipmi-reset', "
-            "'cmos-reset-immediate', 'diagnostic-interrupt', 'kvm-reset', 'policy' "
-            .format(state))
-
-    server_mo.admin_power = state
-    handle.set_mo(server_mo)
-    handle.commit()
-    return server_mo
-
-
-def _powerStatus(dn, handle):
-    blade_mo = handle.query_dn(dn)
-    if blade_mo is None:
-        raise UcsException(
-            "service_profile_power_set: Failed to set element power",
-            "sever %s does not exist" % (dn))
-    elif blade_mo._class_id == "LsServer":
-        sp_mo = blade_mo
-    elif blade_mo.assigned_to_dn is None or blade_mo.assigned_to_dn == "":
-        raise UcsException(
-            "service_profile_power_set: Failed to set element power",
-            "sever %s is not associated to a service profile" % (dn))
-    else:
-        sp_mo = handle.query_dn(blade_mo.assigned_to_dn)
-    powerLs = LsPower(sp_mo)
-    handle.set_mo(sp_mo)
-    handle.commit()
-    data = powerLs.state
-    return data
-
-
-def _getPollerHandler(request):
-    authInfo = _getUcsAuthInfo(request.headers)
-    host, user, password = authInfo
-    handlers = current_app.config.get('handlers')
-    handle = handlers.get(host) if handlers else None
-    if handle and handle['username'] == user and handle['password'] == password:
-        handle['timestamp'] = time.time()
-        return handle['handle']
-    else:
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            data = {
-                'username': user,
-                'password': password,
-                'host': host,
-                'handle': handle,
-                'timestamp': time.time()
-            }
-            if 'handlers' not in current_app.config:
-                current_app.config['handlers'] = {}
-            current_app.config['handlers'][host] = data
-            return handle
-        else:
-            handle.logout()
-
-
-def _getUcsAuthInfo(headers):
-    host = headers.get('ucs-host')
-    user = headers.get('ucs-user')
-    password = headers.get('ucs-password')
-
-    return(host, user, password)
-
-
-def reduce(object):
-    # remove the private propeties of an obj
-    for property in object.keys():
-        if (property[0] == "_"):
-            del object[property]
-    return object
+    return Ucs.powerMgmt(request.headers, identifier, action, physical)
