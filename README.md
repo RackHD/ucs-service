@@ -14,6 +14,8 @@ Copyright © 2017 Dell Inc. or its subsidiaries.  All Rights Reserved.
 
     pip install -r requirements.txt
 
+**Note**: Celery requires a broker and RabbitMQ is chosen. RabbitMQ is not included in requirement.txt, user should install RabbitMQ separately.
+
 ## configuration
 
 Before user starts ucs-service, there are some configurations should be set:
