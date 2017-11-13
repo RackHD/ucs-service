@@ -10,141 +10,177 @@
 # Description:       UCS service
 ### END INIT INFO
 
-NAME="ucs-service"
-USER="root"
-APP_DIR="/var/renasar/$NAME"
-PYTHON_APP="app.py"
+APP_NAME="ucs-service"
+APP_DIR="/var/renasar/$APP_NAME"
 PID_DIR="/var/run"
-PID_FILE="$PID_DIR/$NAME.pid"
-LOG_DIR="/var/log/rackhd"
-LOG_FILE="$LOG_DIR/$NAME.log"
+LOG_DIR="/var/log/$APP_NAME"
+
+SERVICE_NAME="ucs-service"
+SERVICE_APP="app.py"
+SERVICE_PID_FILE="$PID_DIR/$SERVICE_NAME.pid"
+SERVICE_LOG_FILE="$LOG_DIR/$SERVICE_NAME.log"
+
+WORKER_NAME="ucs-worker"
+WORKER_APP="tasks.py worker"
+WORKER_PID_FILE="$PID_DIR/$WORKER_NAME.pid"
+WORKER_LOG_FILE="$LOG_DIR/$WORKER_NAME.log"
+
 PYTHON_EXEC=/opt/venvs/ucs-service/bin/python
-VIRTUAL_ENV="/opt/venvs/$NAME"
+VIRTUAL_ENV="/opt/venvs/$APP_NAME"
 
 USAGE="Usage: $0 {start|stop|restart|status}"
-RESTART=false
-
 # Time to wait for the server to die, in seconds
 DIETIME=1
 STARTTIME=1
 
 pid_file_exists() {
-    [ -f "$PID_FILE" ]
+    [ -f "$1" ]
 }
 
 get_pid() {
-    echo "$(cat "$PID_FILE")"
-}
-
-is_running() {
-    PID=$(get_pid)
-    ! [ -z "$(ps aux | awk '{print $2}' | grep "^$PID$")" ]
-}
-
-start_it() {
-    if [ ! -d $PID_DIR ]; then mkdir -p "$PID_DIR"; fi
-    if [ ! -d $LOG_DIR ]; then mkdir -p "$LOG_DIR"; fi
-
-    echo "Starting $NAME ..."
-    /sbin/start-stop-daemon --background --start --quiet \
-        --make-pidfile --pidfile $PID_FILE \
-        -d $APP_DIR \
-        --startas /bin/bash -- -c "exec $PYTHON_EXEC $APP_DIR/$PYTHON_APP >> $LOG_FILE 2>&1"
-}
-
-stop_process() {
-    echo "Killing process $PID"
-    /sbin/start-stop-daemon -K --quiet --pidfile $PID_FILE --retry 300
-    return $?
+    echo "$(cat "$1")"
 }
 
 remove_pid_file() {
     echo "Removing pid file"
-    rm -f "$PID_FILE"
+    rm -f "$1"
 }
 
-start_app() {
-    if pid_file_exists
+is_running() {
+    local PID=$(get_pid $1)
+    ! [ -z "$(ps aux | awk '{print $2}' | grep "^$PID$")" ]
+}
+
+start_service_process(){
+    echo "Starting $SERVICE_NAME ..."
+    /sbin/start-stop-daemon --background --start --quiet \
+        --make-pidfile --pidfile $SERVICE_PID_FILE \
+        -d $APP_DIR \
+        --startas /bin/bash -- -c "exec $PYTHON_EXEC $APP_DIR/$SERVICE_APP >> $SERVICE_LOG_FILE 2>&1"
+}
+
+start_worker_process(){
+    echo "Starting $WORKER_NAME ..."
+    /sbin/start-stop-daemon --background --start --quiet \
+        --make-pidfile --pidfile $WORKER_PID_FILE \
+        -d $APP_DIR \
+        --startas /bin/bash -- -c "exec $PYTHON_EXEC $APP_DIR/$WORKER_APP >> $WORKER_LOG_FILE 2>&1"
+}
+
+start_process(){
+    if [ ! -d $PID_DIR ]; then mkdir -p "$PID_DIR"; fi
+    if [ ! -d $LOG_DIR ]; then mkdir -p "$LOG_DIR"; fi
+    if [ $1 = $SERVICE_PID_FILE ]
     then
-        if is_running
+        start_service_process
+    fi
+    if [ $1 = $WORKER_PID_FILE ]
+    then
+        start_worker_process
+    fi
+}
+
+stop_process() {
+    local PID=$(get_pid $1)
+    /sbin/start-stop-daemon -K --quiet --pidfile $1 --retry 300
+    return $?
+}
+
+start_app(){
+    local NAME=$1
+    local PID_FILE=$2
+    if pid_file_exists $PID_FILE
+    then
+        if is_running $PID_FILE
         then
-            PID=$(get_pid)
+            local PID=$(get_pid $PID_FILE)
             echo "$NAME already running with pid $PID"
-            exit 0
+            return 0
         else
-            echo "$NAME stopped, but pid file exists"
-            remove_pid_file
+            echo "$NAME stopped, but pid file exists."
+            remove_pid_file $PID_FILE
         fi
     fi
-
-    start_it && sleep $STARTTIME
-    if is_running
+    start_process $PID_FILE && sleep $STARTTIME
+    if is_running $PID_FILE
     then
-        echo "$NAME started with pid $(get_pid)"
+        PID=$(get_pid $PID_FILE)
+        echo "$NAME started with pid $PID"
     else
         echo "Failed to start $NAME"
-        exit 1
+        return 1
     fi
 }
 
 stop_app() {
-    if pid_file_exists
+    local NAME=$1
+    local PID_FILE=$2
+    if pid_file_exists $PID_FILE
     then
-        if is_running
+        if is_running $PID_FILE
         then
             echo "Stopping $NAME ..."
-            if stop_process
+            local is_stopped=$(stop_process $PID_FILE)
+            if $is_stopped
             then
-                remove_pid_file
+                remove_pid_file $PID_FILE
                 echo "$NAME stopped"
             else
                 echo "Failed to stop $NAME"
-                exit 1
+                return 1
             fi
         else
             echo "$NAME already stopped, but pid file exists"
-            remove_pid_file
+            remove_pid_file $PID_FILE
             echo "$NAME stopped"
         fi
     else
-        echo "$NAME already stopped, pid file does not exist"
+        echo "$NAME already stopped."
     fi
 }
 
 status_app() {
-    if pid_file_exists
+    local NAME=$1
+    local PID_FILE=$2
+    if pid_file_exists $PID_FILE
     then
-        if is_running
+        if is_running $PID_FILE
         then
-            PID=$(get_pid)
-            echo "$NAME running with pid $PID"
-            exit 0
+            PID=$(get_pid $PID_FILE)
+            echo "$NAME is running with pid $PID"
         else
             echo "$NAME stopped, but pid file exists"
-            exit 1
         fi
     else
         echo "$NAME stopped"
-        exit 2
     fi
 }
 
 case "$1" in
     start)
-        start_app
+        if start_app $SERVICE_NAME $SERVICE_PID_FILE
+        then
+            start_app $WORKER_NAME $WORKER_PID_FILE
+        fi
     ;;
 
     stop)
-        stop_app
+        stop_app $SERVICE_NAME $SERVICE_PID_FILE
+        stop_app $WORKER_NAME $WORKER_PID_FILE
     ;;
 
     restart)
-        stop_app && sleep $DIETIME
-        start_app
+        stop_app $SERVICE_NAME $SERVICE_PID_FILE && sleep $DIETIME
+        stop_app $WORKER_NAME $WORKER_PID_FILE && sleep $DIETIME
+        if start_app $SERVICE_NAME $SERVICE_PID_FILE
+        then
+            start_app $WORKER_NAME $WORKER_PID_FILE
+        fi
     ;;
 
     status)
-        status_app
+        status_app $SERVICE_NAME $SERVICE_PID_FILE
+        status_app $WORKER_NAME $WORKER_PID_FILE
     ;;
 
     *)
