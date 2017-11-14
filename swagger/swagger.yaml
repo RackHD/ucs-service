@@ -129,6 +129,43 @@ paths:
           description: "Successful data fetch of rackmount catalogs"
       x-tags:
       - tag: "default"
+  /catalog/async:
+    get:
+      tags:
+      - "default"
+      description: "get catalog information asynchronously"
+      operationId: "controllers.ucs_async_controller.getCatalogAsync"
+      parameters:
+      - name: "ucs-host"
+        in: "header"
+        description: "USC manager host name or IP"
+        required: true
+        type: "string"
+      - name: "ucs-user"
+        in: "header"
+        description: "UCS manager user name"
+        required: true
+        type: "string"
+      - name: "ucs-password"
+        in: "header"
+        description: "UCS manager user password"
+        required: true
+        type: "string"
+      - name: "callbackId"
+        in: "query"
+        description: "Callback API identity"
+        required: true
+        type: "string"
+      - name: "identifier"
+        in: "query"
+        description: "UCS element dn"
+        required: true
+        type: "string"
+      responses:
+        202:
+          description: "Accept data request"
+      x-tags:
+      - tag: "default"
   /pollers:
     get:
       tags:

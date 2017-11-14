@@ -40,3 +40,18 @@ class test_default_async_controller(unittest.TestCase):
             MOCK_CLASS_IDS
         )
         self.assertEqual(result[0], "Accepted")
+
+    @mock.patch('controllers.ucs_async_controller.request')
+    @mock.patch('controllers.ucs_async_controller.tasks.runUcsJob')
+    def testGetCatalogAsyncSuccess(self, mock_tasks, mock_request):
+        """Get catalog asynchronously"""
+        mock_tasks.delay.return_value = True
+        mock_request.headers = MOCK_HEADER
+        result = controler.getCatalogAsync(MOCK_ID, MOCK_CALLBACK_ID)
+        mock_tasks.delay.assert_called_once_with(
+            "getCatalog",
+            MOCK_CALLBACK_ID,
+            MOCK_HEADER,
+            MOCK_ID
+        )
+        self.assertEqual(result[0], "Accepted")
