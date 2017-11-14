@@ -24,7 +24,8 @@ def getRackmount():
 @response_wrapper
 @status_handler(default_status=200)
 def getCatalog(identifier=None):
-    return Ucs.getCatalog(request.headers, identifier)
+    handlers = current_app.config.get("handlers")
+    return Ucs.getCatalog(request.headers, identifier, handlers=handlers)
 
 
 @response_wrapper
