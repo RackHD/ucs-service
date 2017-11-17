@@ -55,7 +55,7 @@ To run unit tests:
 ## Running in docker
 Ucs-service in docker shouldn't run in host mode, because rabbitmq service is built in docker and it may conflict with RackHD's rabbitmq server.
 
-    sudo docker -t example/ucs-service .
+    sudo docker build -t example/ucs-service .
     sudo docker run -p 7080:7080 -ti --rm example/ucs-service
 
 ## Licensing
