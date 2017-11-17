@@ -52,6 +52,12 @@ To run unit tests:
 
     python -m unittest discover -s tests
 
+## Running in docker
+Ucs-service in docker shouldn't run in host mode, because rabbitmq service is built in docker and it may conflict with RackHD's rabbitmq server.
+
+    sudo docker -t example/ucs-service .
+    sudo docker run -p 7080:7080 -ti --rm example/ucs-service
+
 ## Licensing
 
 Licensed under the Apache License, Version 2.0 (the “License”); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
