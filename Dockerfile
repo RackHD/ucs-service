@@ -6,8 +6,7 @@ RUN apt-get update && \
     python-pip \
     python-dev \
     libffi-dev \
-    libssl-dev \
-    rabbitmq-server
+    libssl-dev
 COPY . .
 RUN pip install -U setuptools==36.7.2
 RUN pip install --upgrade pip
