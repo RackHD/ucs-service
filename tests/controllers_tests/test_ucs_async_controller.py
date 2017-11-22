@@ -20,10 +20,10 @@ MOCK_ID = "abc"
 class test_default_async_controller(unittest.TestCase):
 
     def setUp(self):
-        print "running async controller tests setup"
+        print("running async controller tests setup")
 
     def tearDown(self):
-        print "running async controller tests tear down"
+        print("running async controller tests tear down")
 
     @mock.patch('controllers.ucs_async_controller.request')
     @mock.patch('controllers.ucs_async_controller.tasks.runUcsJob')

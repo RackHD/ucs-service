@@ -13,10 +13,10 @@ MOCK_KWARGS = {"arg3": "arg3"}
 class test_default_tasks(unittest.TestCase):
 
     def setUp(self):
-        print "tasks tests running setup"
+        print("tasks tests running setup")
 
     def tearDown(self):
-        print "tasks tests running tear down"
+        print("tasks tests running tear down")
 
     class mockRequestResponse:
 

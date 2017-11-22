@@ -453,7 +453,7 @@ class Ucs:
     @staticmethod
     def _reduce(object):
         # remove the private propeties of an obj
-        for property in object.keys():
+        for property in list(object.keys()):
             if (property[0] == "_"):
                 del object[property]
         return object

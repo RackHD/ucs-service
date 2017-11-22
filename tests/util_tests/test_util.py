@@ -30,10 +30,10 @@ MOCK_SSL_CONFIG = {
 class test_default_tasks(unittest.TestCase):
 
     def setUp(self):
-        print "util tests running setup"
+        print("util tests running setup")
 
     def tearDown(self):
-        print "util tests running tear down"
+        print("util tests running tear down")
 
     def sideEffect(self):
         raise KeyError

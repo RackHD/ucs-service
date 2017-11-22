@@ -21,7 +21,7 @@ def worker_process_cleanup(**kwargs):
     Cleanup UCS handler before work processes are shutdown
     """
     util.cleanup_ucs_handler(handlers)
-    print "Global handlers for celery worker process {} are cleared".format(kwargs["pid"])
+    print("Global handlers for celery worker process {} are cleared".format(kwargs["pid"]))
 
 
 # TODO: Enhance cleanup with more stable methods
@@ -56,8 +56,8 @@ def sendHttpRequest(callbackId, data):
         "POST", url, json={"body": data[0]}, headers=headers, params=query_string
     )
     if res.status_code != 200:
-        print "Error to post data back to RackHD via API: {}".format(callbackUrl)
-        print res.content
+        print("Error to post data back to RackHD via API: {}".format(callbackUrl))
+        print(res.content)
 
 
 if __name__ == "__main__":
