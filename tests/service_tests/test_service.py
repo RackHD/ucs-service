@@ -17,10 +17,10 @@ MOCK_HEADER = {
 class test_default_service(unittest.TestCase):
 
     def setUp(self):
-        print "service tests running setup"
+        print("service tests running setup")
 
     def tearDown(self):
-        print "service tests running tear down"
+        print("service tests running tear down")
 
     class mockUcsHandle:
         result = True

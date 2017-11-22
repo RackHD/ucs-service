@@ -40,10 +40,10 @@ MOCK_CLASS_ID_DATA = ['CPU', 'Mem']
 class test_default_controller(unittest.TestCase):
 
     def setUp(self):
-        print "running controller tests setup"
+        print("running controller tests setup")
 
     def tearDown(self):
-        print "running controller tests tear down"
+        print("running controller tests tear down")
 
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
@@ -623,7 +623,6 @@ class test_default_controller(unittest.TestCase):
                              'CPU data in result does not equal "{}"'.format(MOCK_CLASS_ID_DATA[i]))
         mock_getHandler.return_value.query_classid.assert_has_calls(calls)
 
-        
     @mock.patch('controllers.ucs_controller.current_app')
     @mock.patch('controllers.ucs_controller.Ucs._getHandler')
     @mock.patch('controllers.ucs_controller.request')
