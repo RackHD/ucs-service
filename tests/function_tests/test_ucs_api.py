@@ -13,6 +13,7 @@ from function_tests.test_common import request
 from nosedep import depends
 from nose.plugins.attrib import attr
 
+
 @attr(all=True)
 class ucs_api(unittest.TestCase):
 
@@ -155,5 +156,5 @@ class ucs_api(unittest.TestCase):
         self.check_all_server_power_state("up")
 
 
-#if __name__ == '__main__':
-#    unittest.main()
+if __name__ == '__main__':
+    unittest.main()

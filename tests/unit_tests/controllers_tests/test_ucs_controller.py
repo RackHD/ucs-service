@@ -623,7 +623,6 @@ class test_default_controller(unittest.TestCase):
                              'CPU data in result does not equal "{}"'.format(MOCK_CLASS_ID_DATA[i]))
         mock_getHandler.return_value.query_classid.assert_has_calls(calls)
 
-        
     @mock.patch('controllers.ucs_controller.current_app')
     @mock.patch('controllers.ucs_controller.Ucs._getHandler')
     @mock.patch('controllers.ucs_controller.request')

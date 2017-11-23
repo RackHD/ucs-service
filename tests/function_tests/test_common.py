@@ -23,7 +23,7 @@ requests.packages.urllib3.disable_warnings(
 )
 sys.path.append("/".join((os.path.split(os.path.realpath(__file__))[0]).split('/')[:-2]))
 
-from util import util
+from util import util  # noqa: E402
 
 UCSM_CONFIG = json.loads(os.getenv(
     'UCSCONFIG',
