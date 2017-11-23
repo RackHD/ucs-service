@@ -1,6 +1,8 @@
 #!/bin/bash
 # Copyright 2017, Dell, Inc.
 
+# Copyright 2017, Dell, Inc.
+
 ucs_user=ucspe
 ucs_pass=ucspe
 
