@@ -50,7 +50,11 @@ Script ucs-service-ctl.sh can also be used to stop the service:
 
 To run unit tests:
 
-    python -m unittest discover -s tests
+    python -m unittest discover -s tests/unit_tests
+
+To run functional tests, you should start UCS-service, go to tests/function_tests/ and run:
+
+    sudo bash run_test.sh <UCSM_IP> <UCSM_USER> <UCSM_PASS>
 
 ## Running in docker
 RabbitMQ is not included in docker, user should install RabbitMQ separately.
