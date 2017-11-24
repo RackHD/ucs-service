@@ -1,3 +1,4 @@
+# Copyright 2017, Dell EMC, Inc.
 dist: trusty
 language: python
 python:
@@ -25,7 +26,7 @@ install:
 
 #command to run tests
 script: 
-  - coverage run --source=. --omit=tests -m unittest discover -s tests
+  - coverage run --source=. --omit=tests -m unittest discover -s tests/unit_tests
   - sudo ./extra/install_dh-virtualenv.sh 
 
 after_success: 
