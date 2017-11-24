@@ -1,7 +1,5 @@
 '''
-Copyright 2017, Dell, Inc.
-
-Author(s):
+Copyright 2017, Dell EMC, Inc.
 
 UCS test script that tests:
 -All the ucs service APIs
@@ -79,7 +77,7 @@ class ucs_api(unittest.TestCase):
             raise unittest.SkipTest("No Service Profiles Defined")
         # TO DO more in depth testing for the returned content such as mac validation, etc...
 
-    def test_api_20_ucs_get_catalog(self):
+    def test_api_ucs_get_catalog(self):
         """
         Test the /catalog ucs API
         :return:
@@ -141,7 +139,7 @@ class ucs_api(unittest.TestCase):
         self.assertGreater(total_elements, 0, "Found zero elements")
 
     @depends(after=[test_ucs_get_serviceProfile])
-    def test_api_20_ucs_power(self):
+    def test_api_ucs_power(self):
         """
         Test the GET and POST api for server power state
         :return:

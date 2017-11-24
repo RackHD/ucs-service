@@ -1,9 +1,7 @@
 '''
-  Copyright 2017, Dell, Inc.
+Copyright 2017, Dell EMC, Inc.
 
-  Author(s):
-
-  UCS test common methods and functions
+UCS test common methods and functions
 
 '''
 
@@ -25,16 +23,7 @@ sys.path.append("/".join((os.path.split(os.path.realpath(__file__))[0]).split('/
 
 from util import util  # noqa: E402
 
-UCSM_CONFIG = json.loads(os.getenv(
-    'UCSCONFIG',
-    '''
-    {
-        "ucs-host": "10.240.16.144",
-        "ucs-pass": "ucpse",
-        "ucs-user": "ucspe"
-    }
-    '''
-))
+UCSM_CONFIG = json.loads(os.getenv('UCSCONFIG'))
 
 UCSM_IP = UCSM_CONFIG.get("ucs-host")
 UCSM_USER = UCSM_CONFIG.get("ucs-user")
