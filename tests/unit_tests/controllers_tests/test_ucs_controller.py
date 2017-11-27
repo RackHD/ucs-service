@@ -194,14 +194,16 @@ class test_default_controller(unittest.TestCase):
         # verify return data
         self.assertEqual(result, ({'message': "Couldn't fetch computeRackUnits", 'stack': '', 'status': 500}, 500))
 
+    @mock.patch('controllers.ucs_controller.current_app')
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
-    def testGetCatalogSuccess(self, mock_ucs, mock_request):
+    def testGetCatalogSuccess(self, mock_ucs, mock_request, mock_current_app):
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.logout.return_value = True
         mock_ucs.return_value.query_children.side_effect = [[self.mockCatalogClass(data=MOCK_DATA)]]
         mock_request.headers = MOCK_HEADER
+        mock_current_app.config.get.return_value = self.mockCurrentApp("Anything").config
         # call getCaltalog
         result = controler.getCatalog(identifier=MOCK_ID)
         # verify UCS Mocks were called
@@ -209,37 +211,39 @@ class test_default_controller(unittest.TestCase):
         mock_ucs.return_value.login.assert_called_once()
         calls = [mock.call(in_dn=MOCK_ID)]
         mock_ucs.return_value.query_children.assert_has_calls(calls)
-        mock_ucs.return_value.logout.assert_called_once()
         # verify return data
         self.assertIn({'data': 'data'}, result[0], 'result does not contain member "data"')
         self.assertEqual(MOCK_DATA, result[0][0]['data'], 'result["data"] does not equal "{}"'.format(MOCK_DATA))
         self.assertNotIn('_privData', result[0], 'result contains private member "_privData"')\
 
 
+    @mock.patch('controllers.ucs_controller.current_app')
     @mock.patch('controllers.ucs_controller.request')
-    @mock.patch('service.ucs.UcsHandle')
-    def testGetCatalogForbiden(self, mock_ucs, mock_request):
+    @mock.patch('controllers.ucs_controller.Ucs._getHandler')
+    def testGetCatalogForbiden(self, mock_ucs, mock_request, mock_current_app):
         """Invoke a 403 http error"""
         # setup UCS mocks
-        mock_ucs.return_value.login.return_value = False
+        mock_ucs.return_value = None
         mock_request.headers = MOCK_HEADER
+        mock_current_app.config.get.return_value = self.mockCurrentApp("Anything")
         # call getCaltalog
         result = controler.getCatalog(identifier=MOCK_ID)
         # verify UCS Mocks were not called
-        mock_ucs.assert_called_with(HOST, USER, PASS, secure=False)
-        mock_ucs.return_value.login.assert_called_once()
-        mock_ucs.return_value.query_dn.assert_not_called()
+        headers = {'ucs-user': USER, 'ucs-host': HOST, 'ucs-password': PASS}
+        mock_ucs.assert_called_with(headers, mock_current_app.config.get("handlers"))
         self.assertEqual(result, ({'status': 403, 'message': 'Forbidden', 'stack': ''}, 403))
 
+    @mock.patch('controllers.ucs_controller.current_app')
     @mock.patch('controllers.ucs_controller.request')
     @mock.patch('service.ucs.UcsHandle')
-    def testGetCatalogInternalServerError(self, mock_ucs, mock_request):
+    def testGetCatalogInternalServerError(self, mock_ucs, mock_request, mock_current_app):
         """Invoke a 500 http error"""
         # setup UCS mocks
         mock_ucs.return_value.login.return_value = True
         mock_ucs.return_value.logout.return_value = True
         mock_ucs.return_value.query_children.side_effect = [[]]
         mock_ucs.return_value.query_dn.side_effect = UcsException(500, "Mock Server Error")
+        mock_current_app.config.get.return_value = self.mockCurrentApp("Anything").config
 
         mock_request.headers = MOCK_HEADER
         # call getCaltalog
@@ -606,7 +610,7 @@ class test_default_controller(unittest.TestCase):
     @mock.patch('controllers.ucs_controller.request')
     def testGetPollersSuccess(self, mock_request, mock_getHandler, mock_current_app):
         """Get Pollers Successfully"""
-        mock_current_app.config.get.return_value = self.mockCurrentApp("Anything")
+        mock_current_app.config.get.return_value = self.mockCurrentApp("Anything").config
         mock_getHandler.return_value.query_classid.side_effect = [
             [self.mockCatalogClass(data=MOCK_CLASS_ID_DATA[0])],
             [self.mockCatalogClass(data=MOCK_CLASS_ID_DATA[1])]

@@ -105,26 +105,23 @@ class Ucs:
             return {"error": "Forbidden"}
 
     @staticmethod
-    def getCatalog(headers, identifier=None):
+    def getCatalog(headers, identifier=None, handlers=None):
         authInfo = Ucs._getUcsAuthInfo(headers)
         data = []
 
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            try:
-                elements = (handle.query_children(in_dn=identifier))
-                elements.append(handle.query_dn(dn=identifier))
-                for element in elements:
-                    if (element):
-                        data.append(Ucs._reduce(element.__dict__))
-                handle.logout()
-                return {"data": data}
-            except UcsException as e:
-                handle.logout()
-                raise e
-        else:
-            handle.logout()
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
+        try:
+            elements = (handle.query_children(in_dn=identifier))
+            elements.append(handle.query_dn(dn=identifier))
+            for element in elements:
+                if (element):
+                    data.append(Ucs._reduce(element.__dict__))
+            return {"data": data}
+        except UcsException as e:
+            handle.logout()
+            raise e
 
     @staticmethod
     def getPollers(headers, identifier, classIds, handlers=None):

@@ -18,3 +18,16 @@ def getPollersAsync(identifier, classIds, callbackId):
         classIds
     )
     return {"data": "Accepted"}
+
+
+@response_wrapper
+@status_handler(default_status=202)
+def getCatalogAsync(identifier, callbackId):
+    """Get catalog asynchronously"""
+    tasks.runUcsJob.delay(
+        "getCatalog",
+        callbackId,
+        serialize_ucs_http_headers(request.headers),
+        identifier
+    )
+    return {"data": "Accepted"}

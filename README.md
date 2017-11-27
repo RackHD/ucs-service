@@ -36,7 +36,7 @@ All configurations are stored in config.json, in the root path of ucs-service di
 To start the service:
 
     python app.py
-    python task.py worker
+    python tasks.py worker
 
 If you have supervisord available, you can use ucs-service-ctl.sh to start the service:
 
