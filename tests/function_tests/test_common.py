@@ -41,6 +41,7 @@ else:
         UCS_SERVICE_CONFIG["port"]
     )
 
+
 def request(method, api, query=None, payload=None, headers=None):
     """
     Local HTTP/HTTPS request method
