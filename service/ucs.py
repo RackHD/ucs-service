@@ -39,29 +39,25 @@ class Ucs:
             "humanReadableName": "Servers"
         }]
         finalObjs = {}
-        try:
-            for x in elements:
-                units = []
-                try:
-                    components = handle.query_children(
-                        in_dn="sys", class_id=x["ciscoXmlName"])
-                except UcsException as e:
-                    handle.logout()
-                    return {"error": e.error_descr}
+        for x in elements:
+            units = []
+            try:
+                components = handle.query_children(
+                    in_dn="sys", class_id=x["ciscoXmlName"])
+            except UcsException as e:
+                handle.logout()
+                return {"error": e.error_descr}
+            else:
+                if (type(components) == list):
+                    for y in components:
+                        subElement = {
+                            "relative_path": "/" + (vars(y))["dn"]
+                        }
+                        units.append(subElement)
+                    finalObjs[x["humanReadableName"]] = units
                 else:
-                    if (type(components) == list):
-                        for y in components:
-                            subElement = {
-                                "relative_path": "/" + (vars(y))["dn"]
-                            }
-                            units.append(subElement)
-                        finalObjs[x["humanReadableName"]] = units
-                    else:
-                        return {"error": "Couldn't fetch " + x["ciscoXmlName"]}
-            return {"data": finalObjs}
-        except UcsException as e:
-            handle.loout()
-            raise e
+                    return {"error": "Couldn't fetch " + x["ciscoXmlName"]}
+        return {"data": finalObjs}
 
     @staticmethod
     def getRackmount(headers, handlers=None):
