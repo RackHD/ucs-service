@@ -12,13 +12,15 @@ def login_get():
 @response_wrapper
 @status_handler(default_status=200)
 def systemGetAll():
-    return Ucs.systemGetAll(request.headers)
+    handlers = current_app.config.get("handlers")
+    return Ucs.systemGetAll(request.headers, handlers=handlers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getRackmount():
-    return Ucs.getRackmount(request.headers)
+    handlers = current_app.config.get("handlers")
+    return Ucs.getRackmount(request.headers, handlers=handlers)
 
 
 @response_wrapper
@@ -33,32 +35,32 @@ def getCatalog(identifier=None):
 def getPollers(identifier, classIds):
     handlers = current_app.config.get("handlers")
     return Ucs.getPollers(
-        request.headers,
-        identifier,
-        classIds,
-        handlers=handlers
-    )
+        request.headers, identifier, classIds, handlers=handlers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getChassis():
-    return Ucs.getChassis(request.headers)
+    handlers = current_app.config.get("handlers")
+    return Ucs.getChassis(request.headers, handlers=handlers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def getServiceProfile():
-    return Ucs.getServiceProfile(request.headers)
+    handlers = current_app.config.get("handlers")
+    return Ucs.getServiceProfile(request.headers, handlers=handlers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def powerStatus(identifier=None):
-    return Ucs.powerStatus(request.headers, identifier)
+    handlers = current_app.config.get("handlers")
+    return Ucs.powerStatus(request.headers, identifier, handlers=handlers)
 
 
 @response_wrapper
 @status_handler(default_status=200)
 def powerMgmt(identifier=None, action=None, physical=False):
-    return Ucs.powerMgmt(request.headers, identifier, action, physical)
+    handlers = current_app.config.get("handlers")
+    return Ucs.powerMgmt(request.headers, identifier, action, physical, handlers=handlers)

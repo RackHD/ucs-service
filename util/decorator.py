@@ -30,14 +30,17 @@ def status_handler(default_status=200):
             except Exception as e:
                 return 'Internal Server Error', traceback.format_exc(e), 500
 
-            if result.get("data"):
-                return result.get("data"), default_status
-            elif result.get("error") == "Forbidden":
-                return result.get("error"), "", 403
-            elif result.get("error"):
-                return result.get("error"), "", 500
+            if isinstance(result, dict):
+                if "data" in result.keys():
+                    return result.get("data"), default_status
+                elif result.get("error") == "Forbidden":
+                    return result.get("error"), "", 403
+                elif result.get("error"):
+                    return result.get("error"), "", 500
+                else:
+                    return "Unknown", "", 500
             else:
-                return "Unknown", "", 500
+                return result, "", default_status
 
         return wrapper
     return outter

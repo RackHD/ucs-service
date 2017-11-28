@@ -7,7 +7,6 @@ from ucsmsdk.mometa.ls.LsPower import LsPowerConsts
 from ucsmsdk.mometa.ls.LsPower import LsPower
 from ucsmsdk.ucshandle import UcsHandle
 
-
 SESSION_DURATION = util.load_config().get("session", 60)
 
 
@@ -22,24 +21,25 @@ class Ucs:
             return handle.cookie
 
     @staticmethod
-    def systemGetAll(headers):
-        authInfo = Ucs._getUcsAuthInfo(headers)
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            elements = [{
-                "ciscoXmlName": "EquipmentChassis",
-                "humanReadableName": "Chassis"
-            }, {
-                "ciscoXmlName": "NetworkElement",
-                "humanReadableName": "Fabric Interconnects"
-            }, {
-                "ciscoXmlName": "EquipmentFex",
-                "humanReadableName": "FEX"
-            }, {
-                "ciscoXmlName": "computeRackUnit",
-                "humanReadableName": "Servers"
-            }]
-            finalObjs = {}
+    def systemGetAll(headers, handlers=None):
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
+            return {"error": "Forbidden"}
+        elements = [{
+            "ciscoXmlName": "EquipmentChassis",
+            "humanReadableName": "Chassis"
+        }, {
+            "ciscoXmlName": "NetworkElement",
+            "humanReadableName": "Fabric Interconnects"
+        }, {
+            "ciscoXmlName": "EquipmentFex",
+            "humanReadableName": "FEX"
+        }, {
+            "ciscoXmlName": "computeRackUnit",
+            "humanReadableName": "Servers"
+        }]
+        finalObjs = {}
+        try:
             for x in elements:
                 units = []
                 try:
@@ -47,7 +47,7 @@ class Ucs:
                         in_dn="sys", class_id=x["ciscoXmlName"])
                 except UcsException as e:
                     handle.logout()
-                    return 'Internal Server Error', e.error_descr, 500
+                    return {"error": e.error_descr}
                 else:
                     if (type(components) == list):
                         for y in components:
@@ -57,56 +57,47 @@ class Ucs:
                             units.append(subElement)
                         finalObjs[x["humanReadableName"]] = units
                     else:
-                        handle.logout()
-                        return "Couldn't fetch " + x["ciscoXmlName"], "", 500
-            handle.logout()
+                        return {"error": "Couldn't fetch " + x["ciscoXmlName"]}
             return {"data": finalObjs}
-        else:
-            handle.logout()
-            return {"error": "Forbidden"}
+        except UcsException as e:
+            handle.loout()
+            raise e
 
     @staticmethod
-    def getRackmount(headers):
-        authInfo = Ucs._getUcsAuthInfo(headers)
+    def getRackmount(headers, handlers=None):
         data = []
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            try:
-                computeRackUnit = handle.query_children(
-                    in_dn="sys", class_id="computeRackUnit")
-            except UcsException as e:
-                handle.logout()
-                raise e
-            else:
-                if (type(computeRackUnit) == list):
-                    for x in computeRackUnit:
-                        server = {}
-                        server["name"] = x.rn
-                        server["path"] = x.dn
-                        server["macs"] = []
-                        try:
-                            macs = handle.query_children(
-                                in_dn=x.dn, class_id='PciEquipSlot')
-                        except UcsException as e:
-                            handle.logout()
-                            raise e
-                        for y in macs:
-                            server["macs"].append(y.mac_left)
-                            server["macs"].append(y.mac_right)
-                        data.append(server)
-                    handle.logout()
-                    return {"data": data}
-                else:
-                    handle.logout()
-                    return {"error": "Couldn't fetch computeRackUnits"}
-
-        else:
-            handle.logout()
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
+        try:
+            computeRackUnit = handle.query_children(
+                in_dn="sys", class_id="computeRackUnit")
+        except UcsException as e:
+            handle.logout()
+            raise e
+        else:
+            if (type(computeRackUnit) == list):
+                for x in computeRackUnit:
+                    server = {}
+                    server["name"] = x.rn
+                    server["path"] = x.dn
+                    server["macs"] = []
+                    try:
+                        macs = handle.query_children(
+                            in_dn=x.dn, class_id='PciEquipSlot')
+                    except UcsException as e:
+                        handle.logout()
+                        raise e
+                    for y in macs:
+                        server["macs"].append(y.mac_left)
+                        server["macs"].append(y.mac_right)
+                    data.append(server)
+                return {"data": data}
+            else:
+                return {"error": "Couldn't fetch computeRackUnits"}
 
     @staticmethod
     def getCatalog(headers, identifier=None, handlers=None):
-        authInfo = Ucs._getUcsAuthInfo(headers)
         data = []
 
         handle = Ucs._getHandler(headers, handlers)
@@ -140,8 +131,10 @@ class Ucs:
             if pattern.match(identifier):
                 excludeBade = ' and not (dn, ".*blade.*", type="re")'
             for class_id in classIds:
-                filter_str = '(dn, "{}.*", type="re"){}'.format(identifier, excludeBade)
-                items = handle.query_classid(class_id=class_id, filter_str=filter_str)
+                filter_str = '(dn, "{}.*", type="re"){}'.format(
+                    identifier, excludeBade)
+                items = handle.query_classid(
+                    class_id=class_id, filter_str=filter_str)
                 colletion = []
                 for item in items:
                     colletion.append(Ucs._reduce(item.__dict__))
@@ -152,68 +145,60 @@ class Ucs:
             raise e
 
     @staticmethod
-    def getChassis(headers):
-        authInfo = Ucs._getUcsAuthInfo(headers)
+    def getChassis(headers, handlers=None):
         data = []
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            try:
-                elememts = handle.query_children(
-                    in_dn="sys", class_id="EquipmentChassis")
-            except UcsException as e:
-                handle.logout()
-                raise e
-            else:
-                if (type(elememts) == list):
-                    for element in elememts:
-                        chassis = {}
-                        identifier = element.dn
-                        obj = handle.query_dn(dn=identifier)
-                        chassis["name"] = obj.rn
-                        chassis["path"] = obj.dn
-                        chassis["members"] = []
-                        try:
-                            blades = handle.query_children(
-                                in_dn=identifier, class_id='ComputeBlade')
-                        except UcsException as e:
-                            handle.logout()
-                            raise e
-                        else:
-                            if (type(blades) == list):
-                                for x in blades:
-                                    server = {}
-                                    server["name"] = x.rn
-                                    server["path"] = x.dn
-                                    server["macs"] = []
-                                    try:
-                                        adptares = handle.query_children(
-                                            in_dn=x.dn, class_id='AdaptorUnit')
-                                    except UcsException as e:
-                                        handle.logout()
-                                        raise e
-                                    else:
-                                        for x in adptares:
-                                            server["macs"].append(x.base_mac)
-                                        chassis["members"].append(server)
-                                data.append(chassis)
-                            else:
-                                handle.logout()
-                                return {"error": "Couldn't fetch ComputeBlade"}
-                else:
-                    handle.logout()
-                    return {"error": "Couldn't fetch EquipmentChassis"}
-        else:
-            handle.logout()
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
-        handle.logout()
+        try:
+            elememts = handle.query_children(
+                in_dn="sys", class_id="EquipmentChassis")
+        except UcsException as e:
+            handle.logout()
+            raise e
+        else:
+            if (type(elememts) == list):
+                for element in elememts:
+                    chassis = {}
+                    identifier = element.dn
+                    obj = handle.query_dn(dn=identifier)
+                    chassis["name"] = obj.rn
+                    chassis["path"] = obj.dn
+                    chassis["members"] = []
+                    try:
+                        blades = handle.query_children(
+                            in_dn=identifier, class_id='ComputeBlade')
+                    except UcsException as e:
+                        handle.logout()
+                        raise e
+                    else:
+                        if (type(blades) == list):
+                            for x in blades:
+                                server = {}
+                                server["name"] = x.rn
+                                server["path"] = x.dn
+                                server["macs"] = []
+                                try:
+                                    adptares = handle.query_children(
+                                        in_dn=x.dn, class_id='AdaptorUnit')
+                                except UcsException as e:
+                                    handle.logout()
+                                    raise e
+                                else:
+                                    for x in adptares:
+                                        server["macs"].append(x.base_mac)
+                                    chassis["members"].append(server)
+                            data.append(chassis)
+                        else:
+                            return {"error": "Couldn't fetch ComputeBlade"}
+            else:
+                return {"error": "Couldn't fetch EquipmentChassis"}
         return {"data": data}
 
     @staticmethod
-    def getServiceProfile(headers):
-        authInfo = Ucs._getUcsAuthInfo(headers)
-        handle = UcsHandle(*authInfo, secure=False)
-        if not handle.login():
-            handle.logout()
+    def getServiceProfile(headers, handlers=None):
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
         rootElements = [{
             "ciscoXmlName": "orgOrg",
@@ -229,7 +214,6 @@ class Ucs:
                 raise e
             else:
                 if not (type(components) == list):
-                    handle.logout()
                     return {
                         "error": "Couldn't fetch " + x["humanReadableName"]
                     }
@@ -245,7 +229,6 @@ class Ucs:
                         raise e
                     else:
                         if not (type(lsList) == list):
-                            handle.logout()
                             return {"error": "Couldn't fetch Logical Servers"}
                         for item in lsList:
                             logicalServer = {}
@@ -257,48 +240,39 @@ class Ucs:
                             logicalServer["assoc_state"] = obj.assoc_state
                             subElement["members"].append(logicalServer)
                 finalObjs[x["humanReadableName"]] = subElement
-        handle.logout()
         return {"data": finalObjs}
 
     @staticmethod
-    def powerStatus(headers, identifier=None):
-        authInfo = Ucs._getUcsAuthInfo(headers)
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            try:
-                state = Ucs._powerStatus(identifier, handle)
-            except UcsException as e:
-                handle.logout()
-                raise e
-            else:
-                handle.logout()
-                return {"data": {"serverState": state}}
-        else:
-            handle.logout()
+    def powerStatus(headers, identifier=None, handlers=None):
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
+        try:
+            state = Ucs._powerStatus(identifier, handle)
+        except UcsException as e:
+            handle.logout()
+            raise e
+        else:
+            return {"data": {"serverState": state}}
 
     @staticmethod
-    def powerMgmt(headers, identifier=None, action=None, physical=False):
-        authInfo = Ucs._getUcsAuthInfo(headers)
-        handle = UcsHandle(*authInfo, secure=False)
-        if handle.login():
-            try:
-                if physical:
-                    data = Ucs._physical_power_set(
-                        handle=handle, dn=identifier, state=action)
-                else:
-                    data = Ucs._service_profile_power_set(
-                        handle=handle, dn=identifier, state=action)
-            except UcsException as e:
-                handle.logout()
-                raise e
-            else:
-                handle.logout()
-                data = Ucs._reduce(data.__dict__)
-            return {"data": data}
-        else:
-            handle.logout()
+    def powerMgmt(headers, identifier=None, action=None, physical=False, handlers=None):
+        handle = Ucs._getHandler(headers, handlers)
+        if not handle:
             return {"error": "Forbidden"}
+        try:
+            if physical:
+                data = Ucs._physical_power_set(
+                    handle=handle, dn=identifier, state=action)
+            else:
+                data = Ucs._service_profile_power_set(
+                    handle=handle, dn=identifier, state=action)
+        except UcsException as e:
+            handle.logout()
+            raise e
+        else:
+            data = Ucs._reduce(data.__dict__)
+        return {"data": data}
 
     @staticmethod
     def _service_profile_power_set(handle, dn=None, state=None):
@@ -365,11 +339,9 @@ class Ucs:
             raise UcsException(
                 "physical_power_set: Failed to set element power",
                 "sever %s does not exist" % (dn))
-        elif (mo._class_id == "LsServer" and mo.assigned_to_dn is not None and
-              mo.assigned_to_dn != ""):
+        elif mo._class_id == "LsServer" and mo.assigned_to_dn is not None and mo.assigned_to_dn != "":
             server_mo = handle.query_dn(mo.assigned_to_dn)
-        elif (mo._class_id == "ComputeRackUnit" or
-              mo._class_id == "compuetBlade"):
+        elif mo._class_id == "ComputeRackUnit" or mo._class_id == "compuetBlade":
             server_mo = mo
         else:
             raise UcsException(
