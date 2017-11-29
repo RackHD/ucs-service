@@ -13,7 +13,14 @@ ddd
 RackHD can retrieve UCS hardware data via http/https APIs of ucs-service, ucs-service will then send request to Cisco UCS manager to collect data and return to RackHD.
 Besides synchronous APIs, ucs-service also provides asynchronous API which can solve UCSM slow response problem. Celery is used as task queue for asynchronous API design.
 
+
+
+
 Copyright © 2017 Dell Inc. or its subsidiaries.  All Rights Reserved.
+
+
+
+
 
 ## installation
 
