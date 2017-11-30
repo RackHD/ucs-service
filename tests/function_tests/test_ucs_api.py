@@ -160,7 +160,7 @@ class ucs_api(unittest.TestCase):
         """
         api_data = request("get", "/sys")
         self.assertEqual(api_data['status'], 200,
-                         'Incorrect HTTP return code, expected 202, got:' + str(api_data['status']))
+                         'Incorrect HTTP return code, expected 200, got:' + str(api_data['status']))
         total_elements = 0
         for device_type in api_data["json"]:
             for element in api_data["json"][str(device_type)]:
