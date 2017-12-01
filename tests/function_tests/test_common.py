@@ -42,13 +42,16 @@ else:
     )
 
 
-def request(method, api, query=None, payload=None):
+def request(method, api, query=None, payload=None, headers=None):
     """
     Local HTTP/HTTPS request method
     """
-    headers = {"ucs-user": UCSM_USER,
-               "ucs-password": UCSM_PASS,
-               "ucs-host": UCSM_IP}
+    if not headers:
+        headers = {
+            "ucs-user": UCSM_USER,
+            "ucs-password": UCSM_PASS,
+            "ucs-host": UCSM_IP
+        }
     url = UCS_SERVICE_URI + api
     response = getattr(requests, method)(
         url=url,

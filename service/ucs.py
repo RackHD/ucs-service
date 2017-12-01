@@ -106,7 +106,6 @@ class Ucs:
 
     @staticmethod
     def getCatalog(headers, identifier=None, handlers=None):
-        authInfo = Ucs._getUcsAuthInfo(headers)
         data = []
 
         handle = Ucs._getHandler(headers, handlers)

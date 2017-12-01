@@ -153,6 +153,123 @@ class ucs_api(unittest.TestCase):
         # verify power state is up
         self.check_all_server_power_state("up")
 
+    def test_async_api_ucs_poller(self):
+        """
+        Test the /pollers/async ucs API
+        :return:
+        """
+        api_data = request("get", "/sys")
+        self.assertEqual(api_data['status'], 200,
+                         'Incorrect HTTP return code, expected 200, got:' + str(api_data['status']))
+        total_elements = 0
+        for device_type in api_data["json"]:
+            for element in api_data["json"][str(device_type)]:
+                api_data_c = request(
+                    "get", "/pollers/async",
+                    query={
+                        "identifier": element["relative_path"].strip("/"),
+                        "classIds": ["equipmentLed"],
+                        "callbackId": "abcd"
+                    }
+                )
+                self.assertEqual(api_data_c['status'], 202,
+                                 'Incorrect HTTP return code, expected 202, got:' +
+                                 str(api_data_c['status']))
+                self.assertEqual(api_data_c['json'], "Accepted",
+                                 "Incorret HTTP response body for asynchronous API")
+                total_elements += 1
+        self.assertGreater(total_elements, 0, "Zero pollers elements found")
+
+    def test_async_api_ucs_catalog(self):
+        """
+        Test the /pollers/async ucs API
+        :return:
+        """
+        api_data = request("get", "/sys")
+        self.assertEqual(api_data['status'], 200,
+                         'Incorrect HTTP return code, expected 200, got:' + str(api_data['status']))
+        total_elements = 0
+        for elementTypes in api_data["json"]:
+            for element in api_data["json"][str(elementTypes)]:
+                api_data_c = request("get", "/catalog/async",
+                                     query={"identifier": element["relative_path"].strip("/"),
+                                            "callbackId": "abcd"})
+                self.assertEqual(api_data_c['status'], 202,
+                                 'Incorrect HTTP return code, expected 202, got:' +
+                                 str(api_data_c['status']))
+                self.assertEqual(api_data_c['json'], "Accepted",
+                                 "Incorret HTTP response body for asynchronous API")
+                total_elements += 1
+        self.assertGreater(total_elements, 0, "Zero catalog elements found")
+
+
+@attr(all=True, negative=True)
+class ucs_api_negative(unittest.TestCase):
+
+    def test_api_without_full_headers(self):
+        """
+        Test the /sys ucs API without full headers
+        :return:
+        """
+        api_data = request("get", "/sys", headers={"ucs-host": "10.1.1.1"})
+        self.assertEqual(api_data['status'], 400,
+                         'Incorrect HTTP return code, expected 400, got:' + str(api_data['status']))
+
+    def test_async_api_ucs_poller(self):
+        """
+        Test the /pollers/async ucs API without callbackId
+        :return:
+        """
+        api_data_c = request("get", "/pollers/async", query={"identifier": "/sys/chassis-1",
+                                                             "classIds": ["equipmentLed"]})
+        self.assertEqual(api_data_c['status'], 400,
+                         'Incorrect HTTP return code, expected 400, got:' +
+                         str(api_data_c['status']))
+
+    def test_async_api_ucs_poller1(self):
+        """
+        Test the /pollers/async ucs API without classIds
+        :return:
+        """
+        api_data_c = request("get", "/pollers/async", query={"identifier": "/sys/chassis-1",
+                                                             "callbackId": "abc"})
+        self.assertEqual(api_data_c['status'], 400,
+                         'Incorrect HTTP return code, expected 400, got:' +
+                         str(api_data_c['status']))
+
+    def test_async_api_ucs_catalog(self):
+        """
+        Test the /catalog/async ucs API without callbackId
+        :return:
+        """
+        api_data_c = request("get", "/catalog/async", query={"identifier": "/sys/chassis-1"})
+        self.assertEqual(api_data_c['status'], 400,
+                         'Incorrect HTTP return code, expected 400, got:' +
+                         str(api_data_c['status']))
+
+
+@attr(all=True, robust=True)
+class ucs_api_stress(unittest.TestCase):
+
+    def test_async_api_ucs_catalog(self):
+        """
+        Stress test the /catalog/async ucs API
+        :return:
+        """
+        api_data = request("get", "/sys")
+        self.assertEqual(api_data['status'], 200,
+                         'Incorrect HTTP return code, expected 200, got:' + str(api_data['status']))
+        element = api_data["json"].values()[0][0]
+        for i in range(512):
+            api_data_c = request("get", "/catalog/async",
+                                 query={"identifier": element["relative_path"].strip("/"),
+                                        "callbackId": "abcd"})
+            self.assertEqual(api_data_c['status'], 202,
+                             'Incorrect HTTP return code, expected 202, got:' +
+                             str(api_data_c['status']))
+            self.assertEqual(api_data_c['json'], "Accepted",
+                             "Incorret HTTP response body for asynchronous API")
+
 
 if __name__ == '__main__':
     unittest.main()

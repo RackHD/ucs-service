@@ -203,7 +203,7 @@ paths:
           type: "string"
       responses:
         200:
-          description: "Successful data fetch of catalogs by class id"
+          description: "Successful data fetch of pollers by class id"
       x-tags:
       - tag: "default"
   /pollers/async:
