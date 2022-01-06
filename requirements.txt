@@ -6,4 +6,4 @@ coveralls==1.1
 flake8==3.3.0
 appdirs==1.4.3
 pyOpenSSL==17.0.0
-celery==4.1.0
+celery==5.2.2
